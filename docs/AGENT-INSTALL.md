@@ -86,6 +86,17 @@ prints one report as JSON (two samples, 2 s apart, so rates are filled) and send
 | Platform unreachable | The agent keeps collecting on schedule and queues up to 240 reports (2 hours at 30 s); they are delivered oldest-first when the platform is back. Beyond that the oldest are dropped and the gap shows in the charts. |
 | Uninstall | `sudo ./deploy/linux/uninstall-agent.sh`, then revoke in the UI |
 
+## Packet capture (optional)
+
+Capture is off until you enable it on this server:
+
+```bash
+sudo ./deploy/linux/enable-capture.sh --interfaces eth0
+```
+
+`install-agent.sh --enable-capture` does the same during installation. Details, visibility
+levels and troubleshooting: [PACKET-CAPTURE.md](PACKET-CAPTURE.md).
+
 ## Troubleshooting
 
 | Symptom | Cause / fix |

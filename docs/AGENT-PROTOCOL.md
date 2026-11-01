@@ -88,6 +88,57 @@ is reported in the `swap…` fields; disk `mount` is the drive (`C:\`); `diskIo.
 disk instance (`0_C:`); interface names may contain spaces and brackets; process `user` is absent;
 service `loadState` is the start mode (Auto/Manual/Disabled) and `activeState` the Windows state.
 
+## Packet capture (Phase 4)
+
+Capture is **off** unless the server's administrator sets `capture.enabled=true` on that server.
+All calls use the normal agent credential; an agent can only touch captures of its own server
+(`403` otherwise).
+
+**Capability in every report** (`capture` object; omitted by agents older than 0.4.0):
+
+```json
+"capture": { "enabled": true, "available": true, "message": null,
+             "interfaces": [ { "name": "eth0" }, { "name": "lo", "description": "Loopback" } ],
+             "maxDurationSeconds": 3600, "maxBytes": 1073741824, "dumpcapVersion": "Dumpcap (Wireshark) 4.2.2 …" }
+```
+
+`available: false` comes with a `message` such as *dumpcap not found*, *the agent account may not
+run dumpcap* or *no allowed interface*. The platform only offers listed interfaces, within these
+limits.
+
+**Tasks — `POST /api/v1/agent/tasks`** (polled every 5 s while capture is enabled). Each task is
+delivered once.
+
+```json
+{ "tasks": [
+  { "id": "…", "type": "START_CAPTURE", "captureId": "…", "interfaceName": "eth0",
+    "captureFilter": "tcp port 443", "snaplen": 256, "durationSeconds": 300, "maxBytes": 104857600 },
+  { "id": "…", "type": "STOP_CAPTURE", "captureId": "…" } ] }
+```
+
+Only these two typed tasks exist. The agent checks a START task against its own settings again
+before it runs dumpcap with a fixed argument list.
+
+**Status — `POST /api/v1/agent/captures/{id}/status`** with
+`{ "state": "STARTING|RUNNING|COMPLETED|FAILED|UNSUPPORTED", "message": "…", "packets": 996 }`.
+`packets` is dumpcap's own count. The reply is the same as for a piece upload.
+
+**Pieces — `PUT /api/v1/agent/captures/{id}/segments/{seq}`**, body = one PCAPNG file
+(`application/octet-stream`, at most 64 MB). `seq` starts at 1 and has no gaps. Re-sending a piece
+already stored is accepted and ignored.
+
+Reply:
+
+```json
+{ "accepted": true, "stopRequested": false, "bytesStored": 52640, "maxBytes": 104857600 }
+```
+
+Errors:
+- `409 CAPTURE_NOT_ACTIVE` — the capture has ended;
+- `413 CAPTURE_SIZE_LIMIT` — the size limit has been reached.
+
+On either error the agent stops dumpcap and discards the rest.
+
 ## Credential rotation — `POST /api/v1/agent/credentials/rotate`
 
 Returns `{ "secret", "previousSecretValidUntil" }`. The agent saves the new secret to disk **before**

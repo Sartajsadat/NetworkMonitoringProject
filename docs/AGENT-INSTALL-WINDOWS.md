@@ -77,6 +77,13 @@ script. The only input is the list of service names to watch, validated as
 - **Remove:** `.\deploy\windows\uninstall-agent.ps1` (add `-KeepData` to keep configuration and logs),
   then revoke the agent in the UI.
 
+## Packet capture (optional)
+
+1. Install Wireshark with Npcap. Do not restrict Npcap to Administrators.
+2. Re-run the installer with `-EnableCapture -CaptureInterfaces "Ethernet0"`.
+
+Details and troubleshooting: [PACKET-CAPTURE.md](PACKET-CAPTURE.md).
+
 ## Troubleshooting
 
 | Symptom | Cause / fix |

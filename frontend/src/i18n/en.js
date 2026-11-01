@@ -819,4 +819,5 @@ export default {
   "errors.TSHARK_TIMEOUT": "The analysis took too long. Use a narrower filter.",
   "errors.INVALID_TICKET": "The download link expired. Click Download again.",
   "captureNew.snaplenOption": "{label} – {n} bytes",
+  "errors.TSHARK_UNAVAILABLE": "Packet analysis is not available: TShark is not installed on the platform server.",
 };

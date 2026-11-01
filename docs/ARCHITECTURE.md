@@ -184,8 +184,15 @@ system_settings (key PK, value, updated_at)   -- holds "setup completed" marker
 `server_snapshots`, `metric_samples`, `metric_rollups_5m` — see PHASE-2.md for why the latest
 snapshot replaced separate interface/service/process tables.
 
-**Planned tables (later phases)**: `packet_captures`,
-`packet_summaries` (P4); `system_events`, `alerts`, `alert_rules`, `alert_events`,
+**Phase 4 tables (done)**:
+- `packet_captures` — the request, limits, status and retention;
+- `capture_segments` — one row per uploaded PCAPNG piece;
+- `agent_tasks` — typed START/STOP tasks only;
+- `packet_summaries` — per-packet metadata only, never payload.
+
+PCAPNG files are on disk under `CAPTURE_STORAGE_DIR`, not in the database. See PHASE-4.md.
+
+**Planned tables (later phases)**: `system_events`, `alerts`, `alert_rules`, `alert_events`,
 `log_entries` (P5); `subnets`, `ip_addresses`, `network_devices`, `network_flows` (P6);
 `firewall_integrations`, `firewall_rules`, `access_policy_requests`,
 `access_policy_approvals` (P7); `application_inventory`, `application_access_policies` (P8);
@@ -223,9 +230,13 @@ All timestamps are `timestamptz` and stored in UTC.
 3. **Agent → Backend** (Phase 2): agents open outbound connections; each agent has its own
    credential that can be rotated or revoked; the backend never pushes shell commands, only
    typed, validated tasks.
-4. **Agent → Capture helper** (Phase 4): the only privileged piece is dumpcap (file
-   capabilities on Linux, Npcap driver on Windows). The Spring Boot app and the agent do not run
-   as root/Administrator.
+4. **Agent → Capture helper** (Phase 4, built): the only privileged piece is dumpcap.
+   - Linux: file capabilities `cap_net_raw,cap_net_admin`, executable only by the `wireshark`
+     group, granted through a systemd drop-in. The agent's Java process keeps no capabilities.
+   - Windows: the Npcap driver.
+   - Capture is switched on locally by the server's administrator, never by the platform.
+   - The agent re-checks every request against its local allowlist and limits.
+   - The backend analyses the files with TShark, without privileges.
 5. **Agent → Firewall** (Phase 7): rules must be requested, approved, previewed (including
    "would this block the management connection?" check), applied, then read back. Status is
    `PENDING`, `APPLIED`, `FAILED`, `EXPIRED` or `UNVERIFIED` — never "success" because a call

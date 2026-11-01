@@ -818,4 +818,5 @@ export default {
   "errors.TSHARK_TIMEOUT": "تحلیل بیش از حد طول کشید. فیلتر محدودتری به کار ببرید.",
   "errors.INVALID_TICKET": "پیوند دانلود منقضی شده است. دوباره روی دانلود کلیک کنید.",
   "captureNew.snaplenOption": "{label} – {n} بایت",
+  "errors.TSHARK_UNAVAILABLE": "تحلیل بسته در دسترس نیست: TShark روی سرور پلتفورم نصب نیست.",
 };

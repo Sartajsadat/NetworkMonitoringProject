@@ -818,4 +818,5 @@ export default {
   "errors.TSHARK_TIMEOUT": "شنل ډېر وخت ونیو. تنګ فلټر وکاروئ.",
   "errors.INVALID_TICKET": "د ښکته کولو لینک یې موده تېره شوې. بیا په ښکته کولو کلیک وکړئ.",
   "captureNew.snaplenOption": "{label} – {n} بایټه",
+  "errors.TSHARK_UNAVAILABLE": "د پاکټونو شنل شتون نه لري: TShark د پلاتفورم په سرور نه دی نصب.",
 };

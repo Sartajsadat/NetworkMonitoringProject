@@ -3,12 +3,16 @@
 Central platform for the Ministry of Telecommunication to monitor ministry-hosted servers,
 analyse network traffic, investigate incidents and (later) manage IP access rules.
 
-> **Status: Phase 3 of 9 done (Linux and Windows monitoring).** Authentication, users, server
-> inventory, audit log, English/Pashto/Dari UI, and monitoring agents for Linux and Windows with
-> live and historical CPU, memory, disk, network, service and process data. (The Windows agent still
-> needs its first test on a real Windows server: see docs/PHASE-3.md.)
-> Packet capture, alerts and firewall control arrive in later phases and are shown in the UI as
-> *not available yet* — never with placeholder numbers.
+> **Status: Phase 4 of 9 done (packet analyzer).** Done so far:
+> - authentication, users, server inventory and the audit log;
+> - English/Pashto/Dari UI;
+> - monitoring agents for Linux and Windows (live and historical CPU, memory, disk, network,
+>   service and process data);
+> - packet capture with dumpcap on the servers and analysis with TShark on the platform.
+>
+> The Windows agent and Windows capture still need a test on a real Windows server: see
+> docs/PHASE-3.md and docs/PHASE-4.md. Alerts and firewall control arrive in later phases and are
+> shown in the UI as *not available yet*, never with placeholder numbers.
 
 | Document | Contents |
 |---|---|
@@ -19,6 +23,8 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 | [docs/PHASE-3.md](docs/PHASE-3.md) | Windows agent, and the Windows test checklist |
 | [docs/AGENT-INSTALL-WINDOWS.md](docs/AGENT-INSTALL-WINDOWS.md) | Installing the Windows agent as a service |
 | [docs/AGENT-PROTOCOL.md](docs/AGENT-PROTOCOL.md) | Agent ↔ platform API |
+| [docs/PHASE-4.md](docs/PHASE-4.md) | Packet analyzer: how capture and analysis work, Windows test checklist |
+| [docs/PACKET-CAPTURE.md](docs/PACKET-CAPTURE.md) | Enabling capture, visibility levels, filters, roles, troubleshooting |
 | [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 
 ## Stack
@@ -79,6 +85,7 @@ Enter the token and create the first super administrator. There are no default a
 | Node.js | 22 LTS (≥ 20.19 or 22.12) | [NodeSource](https://github.com/nodesource/distributions) or `nvm` | [nodejs.org](https://nodejs.org) installer |
 | PostgreSQL | 16 | `sudo apt install postgresql-16` | [EDB installer](https://www.postgresql.org/download/windows/) or the compose `db` service |
 | Docker | optional for dev, **required for backend tests** (Testcontainers) | `docker.io` / Docker CE | Docker Desktop |
+| TShark | for packet analysis (and its backend tests) | `sudo apt install tshark` (answer *No* to non-root capture) | [Wireshark installer](https://www.wireshark.org/download.html), then set `TSHARK_PATH=C:\Program Files\Wireshark\tshark.exe` |
 
 Maven does not need to be installed: use the wrapper (`./mvnw` on Ubuntu, `mvnw.cmd` on Windows).
 
@@ -118,6 +125,12 @@ $env:JWT_SECRET="<paste a base64 value of 48 random bytes>"; $env:REFRESH_COOKIE
 ```
 
 Flyway creates the schema on start. The setup token is printed in this console.
+
+For packet analysis without Docker, install TShark (see the prerequisites table). On Windows also
+set where capture files go, for example
+`$env:CAPTURE_STORAGE_DIR="C:\NetMon\captures"` and
+`$env:TSHARK_PATH="C:\Program Files\Wireshark\tshark.exe"`. Without TShark the backend still starts;
+the Captures page then says that analysis is not available.
 Swagger UI: <http://localhost:8080/swagger-ui.html>.
 
 ### 3. Frontend (port 5173)
@@ -158,7 +171,8 @@ cd agent && ./mvnw test
 
 Build it with `cd agent && ./mvnw package` (creates `agent/target/netmon-agent.jar`). The same jar
 runs on Linux and Windows. Follow [docs/AGENT-INSTALL.md](docs/AGENT-INSTALL.md) for Linux and
-[docs/AGENT-INSTALL-WINDOWS.md](docs/AGENT-INSTALL-WINDOWS.md) for Windows.
+[docs/AGENT-INSTALL-WINDOWS.md](docs/AGENT-INSTALL-WINDOWS.md) for Windows. Packet capture is off
+until enabled on each server: see [docs/PACKET-CAPTURE.md](docs/PACKET-CAPTURE.md).
 
 ## Environment variables
 
@@ -182,6 +196,11 @@ All configuration comes from the environment; see [.env.example](.env.example).
 | `AGENT_ENROLLMENT_TOKEN_TTL` | no | `P1D` | Lifetime of one-time enrollment tokens |
 | `AGENT_ONLINE_THRESHOLD` | no | `PT2M` | A server is Online if its agent reported within this time |
 | `METRICS_RAW_RETENTION` / `METRICS_ROLLUP_RETENTION` | no | `P7D` / `P90D` | History retention |
+| `CAPTURE_STORAGE_DIR` | no | `/var/lib/netmon/captures` | Where capture files are kept (compose: volume `capture-data`) |
+| `CAPTURE_STORAGE_QUOTA_BYTES` | no | 10 GB | Total space for all capture files |
+| `CAPTURE_MAX_DURATION_SECONDS` / `CAPTURE_MAX_BYTES` | no | `3600` / 1 GB | Upper limits for one capture |
+| `CAPTURE_DEFAULT_RETENTION_DAYS` / `CAPTURE_MAX_RETENTION_DAYS` | no | `7` / `90` | Automatic deletion of capture files |
+| `TSHARK_PATH` | no | `/usr/bin/tshark` | TShark used to analyse captures (included in the Docker image) |
 | `HTTP_BIND` / `HTTP_PORT` | no | `127.0.0.1` / `8088` | Where compose publishes the UI |
 
 ## Repository layout

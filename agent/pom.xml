@@ -6,7 +6,7 @@
 
     <groupId>gov.mot</groupId>
     <artifactId>netmon-agent</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
     <name>netmon-agent</name>
     <description>Monitoring agent installed on managed servers. Reports outbound to the central platform.</description>
 
