@@ -61,10 +61,26 @@ public abstract class IntegrationTest {
     void cleanDatabase() {
         captureIndexer.awaitIdle(); // background indexing from the previous test must not race the cleanup
         // audit_logs is append-only by design and is intentionally not cleaned.
-        jdbc.execute("TRUNCATE packet_summaries, capture_segments, agent_tasks, packet_captures, metric_rollups_5m, metric_samples, server_snapshots, server_agent_configs, "
+        jdbc.execute("TRUNCATE events, alerts, alert_rules, packet_summaries, capture_segments, agent_tasks, packet_captures, metric_rollups_5m, metric_samples, server_snapshots, server_agent_configs, "
                 + "agent_enrollment_tokens, agents, server_group_members, server_ip_addresses, servers, server_groups, "
                 + "refresh_tokens, user_roles, users, system_settings");
         loginRateLimiter.reset();
+        jdbc.execute(defaultAlertRules());
+    }
+
+    private static String defaultRules;
+
+    /** The default alert rules exactly as the V4 migration inserts them. */
+    private static synchronized String defaultAlertRules() {
+        if (defaultRules == null) {
+            try (var in = IntegrationTest.class.getResourceAsStream("/db/migration/V4__events_and_alerts.sql")) {
+                String sql = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                defaultRules = sql.substring(sql.indexOf("INSERT INTO alert_rules"));
+            } catch (java.io.IOException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return defaultRules;
     }
 
     protected void createUser(String username, RoleCode... roles) {

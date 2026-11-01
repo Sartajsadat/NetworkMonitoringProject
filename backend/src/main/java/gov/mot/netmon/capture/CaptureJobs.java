@@ -30,8 +30,11 @@ public class CaptureJobs {
     private final Clock clock;
     private final Duration pendingTimeout;
 
+    private final CaptureEvents captureEvents;
+
     public CaptureJobs(PacketCaptureRepository captures, AgentTaskRepository tasks, CaptureService service, Clock clock,
-            AppProperties props) {
+            AppProperties props, CaptureEvents captureEvents) {
+        this.captureEvents = captureEvents;
         this.captures = captures;
         this.tasks = tasks;
         this.service = service;
@@ -58,7 +61,9 @@ public class CaptureJobs {
                 reason = "The agent stopped reporting on this capture";
             }
             if (reason != null) {
+                CaptureStatus before = c.getStatus();
                 c.transition(CaptureStatus.FAILED, reason, now);
+                captureEvents.statusChanged(c, before, CaptureStatus.FAILED);
                 log.warn("Capture {} marked FAILED: {}", c.getId(), reason);
             }
         }

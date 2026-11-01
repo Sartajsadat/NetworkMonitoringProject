@@ -28,9 +28,15 @@ public class AuditService {
     private static final Logger log = LoggerFactory.getLogger(AuditService.class);
 
     private final AuditWriter writer;
+    private final org.springframework.context.ApplicationEventPublisher publisher;
 
-    AuditService(AuditWriter writer) {
+    AuditService(AuditWriter writer, org.springframework.context.ApplicationEventPublisher publisher) {
         this.writer = writer;
+        this.publisher = publisher;
+    }
+
+    /** Published after an audit record is stored (the event timeline mirrors security-relevant ones). */
+    public record AuditRecorded(AuditLog entry) {
     }
 
     /** Fluent entry point: {@code audit.event(AuditAction.X).target("SERVER", id).success()}. */
@@ -111,6 +117,11 @@ public class AuditService {
                 log.error("AUDIT WRITE FAILED action={} actor={} target={}:{} result={}", action, actorUsername,
                         targetType, targetId, result, e);
                 throw e;
+            }
+            try {
+                publisher.publishEvent(new AuditRecorded(entry));
+            } catch (RuntimeException e) {
+                log.warn("Audit listener failed for {}: {}", action, e.toString());
             }
         }
     }

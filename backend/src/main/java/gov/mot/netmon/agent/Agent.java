@@ -145,6 +145,26 @@ public class Agent {
     }
 
     public UUID getId() { return id; }
+    @Column(name = "disconnected_at")
+    private Instant disconnectedAt;
+
+    @Column(name = "disconnect_correlation")
+    private UUID disconnectCorrelation;
+
+    /** Remembers that a disconnection was reported, so it is reported once and paired with the reconnection. */
+    public void markDisconnected(Instant at, UUID correlation) {
+        this.disconnectedAt = at;
+        this.disconnectCorrelation = correlation;
+    }
+
+    public void clearDisconnected() {
+        this.disconnectedAt = null;
+        this.disconnectCorrelation = null;
+    }
+
+    public Instant getDisconnectedAt() { return disconnectedAt; }
+    public UUID getDisconnectCorrelation() { return disconnectCorrelation; }
+
     public UUID getServerId() { return serverId; }
     public AgentStatus getStatus() { return status; }
     public String getSecretHash() { return secretHash; }

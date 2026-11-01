@@ -43,10 +43,15 @@ public class DashboardService {
     private final gov.mot.netmon.capture.PacketCaptureRepository captures;
     private final Clock clock;
     private final Duration onlineThreshold;
+    private final gov.mot.netmon.alert.AlertService alertService;
+    private final gov.mot.netmon.alert.AlertRuleRepository alertRules;
 
     public DashboardService(ServerRepository servers, ServerGroupRepository groups, UserRepository users,
             AuditLogRepository auditLogs, SnapshotStore snapshots, gov.mot.netmon.capture.PacketCaptureRepository captures,
-            Clock clock, AppProperties props) {
+            Clock clock, AppProperties props, gov.mot.netmon.alert.AlertService alertService,
+            gov.mot.netmon.alert.AlertRuleRepository alertRules) {
+        this.alertService = alertService;
+        this.alertRules = alertRules;
         this.snapshots = snapshots;
         this.captures = captures;
         this.servers = servers;
@@ -94,7 +99,8 @@ public class DashboardService {
                 && sn.report().capture().enabled() && sn.report().capture().available()).count();
         long active = captures.countByStatusIn(gov.mot.netmon.capture.CaptureStatus.ACTIVE);
         return new DashboardSummaryResponse(now, all.size(), connectionOut, byStatus, byOs, byEnv, groups.count(),
-                activeUsers, modules(fleet.reportingServers(), captureServers), fleet, active, security);
+                activeUsers, modules(fleet.reportingServers(), captureServers, alertRules.findByEnabledTrue().size()), fleet, active,
+                security, alertService.counts());
     }
 
     private Fleet fleet(List<Server> all, Instant now) {
@@ -132,7 +138,7 @@ public class DashboardService {
     }
 
     /** Honest status of each telemetry module in this release. Updated as phases are delivered. */
-    private static List<ModuleStatus> modules(int reportingServers, long captureServers) {
+    private static List<ModuleStatus> modules(int reportingServers, long captureServers, int enabledRules) {
         ModuleStatus metrics = reportingServers > 0
                 ? new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.AVAILABLE,
                         reportingServers + " server(s) reporting live data.")
@@ -145,8 +151,11 @@ public class DashboardService {
                                 captureServers + " server(s) can capture packets.")
                         : new ModuleStatus("capture", "Packet capture", Availability.NOT_CONFIGURED,
                                 "No server has packet capture enabled in its agent configuration."),
-                new ModuleStatus("alerts", "Alerts and event timeline", Availability.NOT_CONFIGURED,
-                        "Alert rules and event correlation arrive in Phase 5."),
+                enabledRules > 0
+                        ? new ModuleStatus("alerts", "Alerts and event timeline", Availability.AVAILABLE,
+                                enabledRules + " alert rule(s) enabled.")
+                        : new ModuleStatus("alerts", "Alerts and event timeline", Availability.NOT_CONFIGURED,
+                                "All alert rules are disabled. Events are still recorded on the timeline."),
                 new ModuleStatus("firewall", "Firewall integrations", Availability.NOT_CONFIGURED,
                         "No firewall integration is configured. Dry-run adapter arrives in Phase 7."));
     }

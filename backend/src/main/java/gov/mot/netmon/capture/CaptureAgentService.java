@@ -40,8 +40,12 @@ public class CaptureAgentService {
     private final AuditService audit;
     private final Clock clock;
 
+    private final CaptureEvents captureEvents;
+
     public CaptureAgentService(AgentTaskRepository tasks, PacketCaptureRepository captures, CaptureSegmentRepository segments,
-            CaptureStorage storage, CaptureIndexer indexer, ServerRepository servers, AuditService audit, Clock clock) {
+            CaptureStorage storage, CaptureIndexer indexer, ServerRepository servers, AuditService audit, Clock clock,
+            CaptureEvents captureEvents) {
+        this.captureEvents = captureEvents;
         this.tasks = tasks;
         this.captures = captures;
         this.segments = segments;
@@ -83,6 +87,7 @@ public class CaptureAgentService {
         CaptureStatus before = c.getStatus();
         c.setAgentPackets(update.packets());
         boolean changed = c.transition(next, update.message(), clock.instant());
+        if (changed && before != c.getStatus()) captureEvents.statusChanged(c, before, c.getStatus());
         if (changed && before != next && (!next.isActive() || next == CaptureStatus.RUNNING)) {
             String server = servers.findById(agent.serverId()).map(s -> s.getName()).orElse("?");
             var ev = audit.event(AuditAction.CAPTURE_STATUS_CHANGED).actor(null, "agent@" + server).target("CAPTURE", captureId)
@@ -112,7 +117,10 @@ public class CaptureAgentService {
         Instant now = clock.instant();
         segments.save(new CaptureSegment(captureId, seq, stored.fileName(), stored.size(), stored.sha256(), now));
         c.addSegment(stored.size(), now);
-        if (c.getStatus() == CaptureStatus.STARTING) c.transition(CaptureStatus.RUNNING, null, now);
+        if (c.getStatus() == CaptureStatus.STARTING) {
+            c.transition(CaptureStatus.RUNNING, null, now);
+            captureEvents.statusChanged(c, CaptureStatus.STARTING, CaptureStatus.RUNNING);
+        }
         org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
                 new org.springframework.transaction.support.TransactionSynchronization() {
                     @Override

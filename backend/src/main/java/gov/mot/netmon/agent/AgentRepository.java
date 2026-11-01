@@ -8,4 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface AgentRepository extends JpaRepository<Agent, UUID> {
 
     Optional<Agent> findByServerId(UUID serverId);
+
+    java.util.List<Agent> findByStatus(AgentStatus status);
 }

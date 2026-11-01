@@ -7,7 +7,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** Strongly typed view of the {@code app.*} configuration (all values come from the environment). */
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(Security security, Bootstrap bootstrap, Monitoring monitoring, Agents agents, Capture capture) {
+public record AppProperties(Security security, Bootstrap bootstrap, Monitoring monitoring, Agents agents, Capture capture, Events events,
+        Alerts alerts) {
 
     public record Security(
             String jwtSecret,
@@ -60,5 +61,19 @@ public record AppProperties(Security security, Bootstrap bootstrap, Monitoring m
     public record Capture(String storageDir, long quotaBytes, long minFreeDiskBytes, int maxDurationSeconds,
             long maxBytesPerCapture, int defaultSnaplen, int defaultRetentionDays, int maxRetentionDays,
             long maxIndexedPackets, String tsharkPath, Duration tsharkTimeout, Duration pendingTimeout) {
+    }
+
+    /**
+     * @param retention           events older than this are deleted
+     * @param maxPerServerPerHour flood protection; extra events in the same hour are dropped (and that is recorded)
+     */
+    public record Events(Duration retention, int maxPerServerPerHour) {
+    }
+
+    /**
+     * @param evaluationInterval how often alert rules are evaluated
+     * @param resolvedRetention  resolved alerts older than this are deleted
+     */
+    public record Alerts(Duration evaluationInterval, Duration resolvedRetention) {
     }
 }

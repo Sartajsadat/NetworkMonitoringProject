@@ -81,9 +81,12 @@ public class CaptureService {
         }
     });
 
+    private final CaptureEvents captureEvents;
+
     public CaptureService(PacketCaptureRepository captures, CaptureSegmentRepository segments, AgentTaskRepository tasks,
             ServerRepository servers, SnapshotStore snapshots, PacketStore packets, CaptureStorage storage, Tshark tshark,
-            AuditService audit, Clock clock, AppProperties props) {
+            AuditService audit, Clock clock, AppProperties props, CaptureEvents captureEvents) {
+        this.captureEvents = captureEvents;
         this.captures = captures;
         this.segments = segments;
         this.tasks = tasks;
@@ -199,6 +202,7 @@ public class CaptureService {
                 .detail("server", server.getName()).detail("interface", iface).detail("captureFilter", filter)
                 .detail("durationSeconds", c.getDurationSeconds()).detail("maxBytes", c.getMaxBytes())
                 .detail("snaplen", c.getSnaplen()).detail("reference", c.getReference()).success();
+        captureEvents.requested(c, c.getRequestedBy());
         return view(c, server);
     }
 
@@ -210,9 +214,11 @@ public class CaptureService {
         String user = CurrentUser.require().username();
         c.requestStop(user, now);
         List<AgentTask> pendingStart = tasks.findByCaptureIdAndStatus(id, "PENDING");
+        captureEvents.stopRequested(c, user);
         if (c.getStatus() == CaptureStatus.PENDING && !pendingStart.isEmpty()) {
             pendingStart.forEach(AgentTask::cancel); // the agent never saw it
             c.transition(CaptureStatus.STOPPED, "Stopped by " + user + " before the agent started it", now);
+            captureEvents.statusChanged(c, CaptureStatus.PENDING, CaptureStatus.STOPPED);
         } else if (c.getStatus() != CaptureStatus.STOPPING) {
             c.transition(CaptureStatus.STOPPING, null, now);
             tasks.save(new AgentTask(c.getServerId(), c.getId(), "STOP_CAPTURE", Map.of(), now));
@@ -385,6 +391,7 @@ public class CaptureService {
                 .detail("bytes", bytes).detail("how", how).reason(reason);
         if (CurrentUser.usernameOrNull() == null) ev.actor(null, "system");
         ev.success();
+        captureEvents.filesDeleted(c, how, bytes);
     }
 
     // ---------------- helpers ----------------

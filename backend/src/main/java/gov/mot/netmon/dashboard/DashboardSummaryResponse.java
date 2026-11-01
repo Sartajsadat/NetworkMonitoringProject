@@ -22,7 +22,8 @@ public record DashboardSummaryResponse(
         List<ModuleStatus> modules,
         Fleet fleet,
         long activeCaptures,
-        List<AuditLogResponse> recentSecurityEvents) {
+        List<AuditLogResponse> recentSecurityEvents,
+        gov.mot.netmon.alert.AlertDtos.AlertCounts alerts) {
 
     /**
      * Aggregates over servers whose agent reported within the online threshold. All values are null

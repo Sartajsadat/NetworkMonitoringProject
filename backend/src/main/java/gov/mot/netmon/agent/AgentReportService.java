@@ -35,11 +35,16 @@ public class AgentReportService {
     private final ServerAgentConfigRepository configs;
     private final SnapshotStore snapshots;
     private final MetricWriter metricWriter;
+    private final gov.mot.netmon.event.ReportEventDetector detector;
+    private final gov.mot.netmon.event.AgentConnectionMonitor connections;
     private final Clock clock;
     private final int defaultInterval;
 
     public AgentReportService(AgentRepository agents, ServerRepository servers, ServerAgentConfigRepository configs,
-            SnapshotStore snapshots, MetricWriter metricWriter, Clock clock, AppProperties props) {
+            SnapshotStore snapshots, MetricWriter metricWriter, gov.mot.netmon.event.ReportEventDetector detector,
+            gov.mot.netmon.event.AgentConnectionMonitor connections, Clock clock, AppProperties props) {
+        this.detector = detector;
+        this.connections = connections;
         this.agents = agents;
         this.servers = servers;
         this.configs = configs;
@@ -66,6 +71,7 @@ public class AgentReportService {
 
         int errors = report.collectors() == null ? 0
                 : (int) report.collectors().stream().filter(c -> !"OK".equals(c.status())).count();
+        connections.onReport(agent, server, now);
         agent.recordReport(report, ClientInfo.currentIp(), now, errors);
         server.recordAgentReport(report.agentVersion(), errors > 0, now);
 
@@ -73,6 +79,8 @@ public class AgentReportService {
             return new ReportResponse(now, false, "Monitoring is " + server.getMonitoringStatus()
                     + " for this server; metrics are not stored.", toProtocolConfig(config, server));
         }
+        Report previous = snapshots.find(server.getId()).map(SnapshotStore.Snapshot::report).orElse(null);
+        detector.compare(server, previous, report);
         snapshots.upsertIfNewer(server.getId(), report, now);
         int rows = metricWriter.write(server.getId(), report);
         log.debug("Report from {} stored ({} samples, {} collector errors)", server.getName(), rows, errors);

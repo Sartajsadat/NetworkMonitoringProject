@@ -5,6 +5,8 @@ app:
     login-rate-limit-per-minute: 1000
   bootstrap:
     setup-token: test-setup-token-0123456789abcdef
+  alerts:
+    evaluation-interval: PT1H   # tests call the engine directly
   capture:
     storage-dir: ${java.io.tmpdir}/netmon-test-captures
     min-free-disk-bytes: 1048576
