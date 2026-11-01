@@ -70,12 +70,15 @@ export function I18nProvider({ children, initial, stylesheets }) {
       return t('time.minutes', { m: formatNumber(m) });
     };
     const timeShort = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+    const timeSeconds = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
     const dateTimeShort = new Intl.DateTimeFormat(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
     return {
       /** Monitoring unit formatters: bytes, bits (per second), percent, decimal, perSec. */
       units,
       formatDuration,
       formatAxisTime: (ms, long) => (long ? dateTimeShort : timeShort).format(new Date(ms)),
+      /** Axis label with seconds, for spans shorter than an hour (packet captures). */
+      formatAxisTimeSeconds: (ms) => timeSeconds.format(new Date(ms)),
       lang,
       language,
       dir: language.dir,

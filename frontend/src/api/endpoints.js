@@ -73,3 +73,20 @@ export const metricsApi = {
   processes: (serverId) => api.get(`/servers/${serverId}/processes`).then((r) => r.data),
   fleet: () => api.get('/monitoring/fleet').then((r) => r.data),
 };
+
+// Packet captures (Phase 4)
+export const captureApi = {
+  list: (params) => api.get('/captures', { params }).then((r) => r.data),
+  limits: () => api.get('/captures/limits').then((r) => r.data),
+  capabilities: () => api.get('/captures/capabilities').then((r) => r.data),
+  create: (body) => api.post('/captures', body).then((r) => r.data),
+  get: (id) => api.get(`/captures/${id}`).then((r) => r.data),
+  stop: (id) => api.post(`/captures/${id}/stop`).then((r) => r.data),
+  packets: (id, params) => api.get(`/captures/${id}/packets`, { params }).then((r) => r.data),
+  packet: (id, frame) => api.get(`/captures/${id}/packets/${frame}`).then((r) => r.data),
+  bytes: (id, frame) => api.get(`/captures/${id}/packets/${frame}/bytes`).then((r) => r.data),
+  statistics: (id) => api.get(`/captures/${id}/statistics`).then((r) => r.data),
+  validateFilter: (filter) => api.post('/captures/display-filter/validate', { filter }).then((r) => r.data),
+  downloadTicket: (id) => api.post(`/captures/${id}/download-ticket`).then((r) => r.data),
+  deleteFiles: (id, reason) => api.delete(`/captures/${id}/files`, { data: { reason } }).then((r) => r.data),
+};

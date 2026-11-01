@@ -335,12 +335,25 @@ public class CaptureService {
     /** Streams all segments as one PCAPNG file (PCAPNG allows several sections in one file). */
     @Transactional(readOnly = true)
     public PacketCapture prepareDownload(UUID id) {
+        return prepareDownload(id, null, null);
+    }
+
+    /** Checks the files exist and audits the download (actor given explicitly for ticket downloads). */
+    public PacketCapture prepareDownload(UUID id, UUID actorId, String actorUsername) {
         PacketCapture c = find(id);
         requireFiles(c);
         if (c.getSegmentsCount() == 0) throw ApiException.conflict("NO_DATA", "No packets have been received yet");
-        audit.event(AuditAction.CAPTURE_DOWNLOADED).target("CAPTURE", id).detail("name", c.getName())
-                .detail("bytes", c.getBytesStored()).success();
+        var ev = audit.event(AuditAction.CAPTURE_DOWNLOADED);
+        if (actorUsername != null) ev.actor(actorId, actorUsername).detail("via", "ticket");
+        ev.target("CAPTURE", id).detail("name", c.getName()).detail("bytes", c.getBytesStored()).success();
         return c;
+    }
+
+    /** Validates that a download is possible before a ticket is handed out (not audited yet). */
+    public void checkDownloadable(UUID id) {
+        PacketCapture c = find(id);
+        requireFiles(c);
+        if (c.getSegmentsCount() == 0) throw ApiException.conflict("NO_DATA", "No packets have been received yet");
     }
 
     public void writeDownload(UUID id, OutputStream out) throws IOException {

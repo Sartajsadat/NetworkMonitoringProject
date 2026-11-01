@@ -222,3 +222,17 @@ span.nm-link.disabled { opacity: .55; cursor: not-allowed; }
 [data-bs-theme='dark'] .nm-tabs .nav-link.active { color: var(--nm-sidebar-active-text); }
 .nm-code { background: var(--nm-green-050); border: 1px solid var(--nm-border); border-radius: 6px; padding: .6rem .75rem;
   font-family: ui-monospace, Consolas, monospace; font-size: .82rem; white-space: pre-wrap; word-break: break-all; direction: ltr; text-align: left; }
+
+/* ---- Packet analyzer ---- */
+.nm-click { cursor: pointer; }
+.nm-packets { max-height: 60vh; overflow-y: auto; }
+.nm-packets thead th { position: sticky; top: 0; background: var(--bs-body-bg); z-index: 1; }
+.nm-info { max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+tr.nm-pkt-reset > td { background-color: rgba(220, 53, 69, .08); }
+tr.nm-pkt-retrans > td { background-color: rgba(255, 193, 7, .12); }
+.nm-tree { list-style: none; padding-inline-start: 1.1rem; margin: 0; }
+.nm-tree-root { padding-inline-start: 0; max-height: 50vh; overflow: auto; border: 1px solid var(--nm-border-soft); border-radius: .375rem; padding: .5rem; }
+.nm-tree summary { cursor: pointer; }
+.nm-tree-leaf { padding-inline-start: 1rem; }
+.nm-hex { background: var(--bs-tertiary-bg); padding: .5rem; font-size: .75rem; border-radius: .375rem; max-height: 50vh; overflow: auto; white-space: pre; }
+.nm-presets { max-height: 60vh; overflow-y: auto; }

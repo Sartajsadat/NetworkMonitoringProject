@@ -234,6 +234,25 @@ class CaptureApiTest extends AgentTestSupport {
     }
 
     @Test
+    void oneTimeDownloadTicketWorksOnceAndIsAuditedAsTheUser() throws Exception {
+        String id = runningCaptureWithData();
+        mvc.perform(post("/api/v1/captures/" + id + "/download-ticket").header("Authorization", analyst))
+                .andExpect(status().isForbidden());
+        String url = body(mvc.perform(post("/api/v1/captures/" + id + "/download-ticket").header("Authorization", netAdmin))
+                .andExpect(status().isOk()).andReturn()).get("url").asText();
+        assertThat(url).startsWith("/api/v1/captures/download?ticket=");
+        // no Authorization header: the ticket alone authorises this one download
+        var res = mvc.perform(get(url)).andExpect(status().isOk()).andReturn();
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.asyncDispatch(res)).andExpect(status().isOk());
+        assertThat(res.getResponse().getContentAsByteArray()[0]).isEqualTo((byte) 0x0A);
+        mvc.perform(get(url)).andExpect(status().isForbidden()).andExpect(jsonPath("$.code").value("INVALID_TICKET"));
+        mvc.perform(get("/api/v1/captures/download").param("ticket", "x".repeat(43))).andExpect(status().isForbidden());
+        Integer byNetAdmin = jdbc.queryForObject("SELECT count(*) FROM audit_logs WHERE action = 'CAPTURE_DOWNLOADED' "
+                + "AND actor_username = 'netadmin' AND details->>'via' = 'ticket'", Integer.class);
+        assertThat(byNetAdmin).isPositive();
+    }
+
+    @Test
     void statisticsAndConversations() throws Exception {
         String id = runningCaptureWithData();
         JsonNode stats = body(mvc.perform(get("/api/v1/captures/" + id + "/statistics").header("Authorization", analyst))

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { dashboardApi } from '../api/endpoints.js';
 import { useApi } from '../api/useApi.js';
+import { useAuth } from '../auth/AuthContext.jsx';
+import { PERMISSIONS } from '../auth/roles.js';
 import { useI18n } from '../i18n/I18nContext.jsx';
 import CountBarChart from '../components/CountBarChart.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
@@ -62,6 +64,7 @@ function FleetTile({ label, value, hint, icon }) {
 
 export default function DashboardPage() {
   const { t, units, formatNumber } = useI18n();
+  const { can } = useAuth();
   const [refreshSeconds, setRefreshSeconds] = useState(60);
   const { data, error, loading, reload } = useApi(() => dashboardApi.summary(), []);
 
@@ -99,12 +102,20 @@ export default function DashboardPage() {
       {data && (
         <>
           <div className="row g-3 mb-3">
-            <div className="col-6 col-md-4 col-xl-2"><StatTile label={t('dashboard.tile.servers')} value={data.totalServers} icon="hdd-stack" /></div>
-            <div className="col-6 col-md-4 col-xl-2"><StatTile label={t('dashboard.tile.online')} value={data.connection.ONLINE} icon="check-circle" hint={t('dashboard.tile.onlineHint')} /></div>
-            <div className="col-6 col-md-4 col-xl-2"><StatTile label={t('dashboard.tile.offline')} value={data.connection.OFFLINE} icon="x-octagon" hint={t('dashboard.tile.offlineHint')} /></div>
-            <div className="col-6 col-md-4 col-xl-2"><StatTile label={t('dashboard.tile.noAgent')} value={data.connection.NO_AGENT} icon="dash-circle" hint={t('dashboard.tile.noAgentHint')} /></div>
-            <div className="col-6 col-md-4 col-xl-2"><StatTile label={t('dashboard.tile.groups')} value={data.serverGroups} icon="collection" /></div>
-            <div className="col-6 col-md-4 col-xl-2"><StatTile label={t('dashboard.tile.users')} value={data.activeUsers} icon="people" /></div>
+            <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.servers')} value={data.totalServers} icon="hdd-stack" /></div>
+            <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.online')} value={data.connection.ONLINE} icon="check-circle" hint={t('dashboard.tile.onlineHint')} /></div>
+            <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.offline')} value={data.connection.OFFLINE} icon="x-octagon" hint={t('dashboard.tile.offlineHint')} /></div>
+            <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.noAgent')} value={data.connection.NO_AGENT} icon="dash-circle" hint={t('dashboard.tile.noAgentHint')} /></div>
+            <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.groups')} value={data.serverGroups} icon="collection" /></div>
+            <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.users')} value={data.activeUsers} icon="people" /></div>
+            {can(PERMISSIONS.viewCaptures) && (
+              <div className="col-6 col-md-4 col-xl">
+                <Link to="/captures" className="text-reset text-decoration-none d-block h-100">
+                  <StatTile label={t('dashboard.tile.activeCaptures')} value={data.activeCaptures ?? 0} icon="record-circle"
+                    hint={t('dashboard.tile.activeCapturesHint')} />
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="row g-3 mb-3">

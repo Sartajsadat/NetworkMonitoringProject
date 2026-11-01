@@ -16,6 +16,11 @@ export const PERMISSIONS = {
   deleteServers: [ROLES.SUPER_ADMIN],
   manageUsers: [ROLES.SUPER_ADMIN],
   viewAudit: [ROLES.SUPER_ADMIN, ROLES.SECURITY_ANALYST],
+  // Packet captures: analysts may look at packet summaries and protocol trees; only network and
+  // super administrators may start/stop captures, see raw bytes or download files.
+  viewCaptures: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
+  manageCaptures: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN],
+  deleteCaptureFiles: [ROLES.SUPER_ADMIN],
 };
 
 export function hasAnyRole(user, roles) {

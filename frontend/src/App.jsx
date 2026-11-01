@@ -18,6 +18,10 @@ import CpuMemoryPage from './pages/monitoring/CpuMemoryPage.jsx';
 import DisksPage from './pages/monitoring/DisksPage.jsx';
 import InterfacesPage from './pages/monitoring/InterfacesPage.jsx';
 import ServicesPage from './pages/monitoring/ServicesPage.jsx';
+import AnalyzerPage from './pages/captures/AnalyzerPage.jsx';
+import CaptureDetailPage from './pages/captures/CaptureDetailPage.jsx';
+import CapturesPage from './pages/captures/CapturesPage.jsx';
+import NewCapturePage from './pages/captures/NewCapturePage.jsx';
 
 export default function App() {
   return (
@@ -48,6 +52,10 @@ export default function App() {
         <Route path="monitoring/disks" element={<DisksPage />} />
         <Route path="monitoring/interfaces" element={<InterfacesPage />} />
         <Route path="monitoring/services" element={<ServicesPage />} />
+        <Route path="captures" element={<ProtectedRoute roles={PERMISSIONS.viewCaptures}><CapturesPage /></ProtectedRoute>} />
+        <Route path="captures/new" element={<ProtectedRoute roles={PERMISSIONS.manageCaptures}><NewCapturePage /></ProtectedRoute>} />
+        <Route path="captures/:id" element={<ProtectedRoute roles={PERMISSIONS.viewCaptures}><CaptureDetailPage /></ProtectedRoute>} />
+        <Route path="analyzer" element={<ProtectedRoute roles={PERMISSIONS.viewCaptures}><AnalyzerPage /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute roles={[ROLES.SUPER_ADMIN]}><UsersPage /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute roles={PERMISSIONS.viewAudit}><AuditLogPage /></ProtectedRoute>} />
         <Route path="account/password" element={<ChangePasswordPage />} />

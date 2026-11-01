@@ -48,7 +48,7 @@ class TsharkParsingTest {
                   <proto name="geninfo" showname="General information"/>
                   <proto name="ip" showname="Internet Protocol Version 4, Src: 10.0.0.1">
                     <field name="ip.src" showname="Source Address: 10.0.0.1" show="10.0.0.1"/>
-                    <field name="ip.hidden" hide="1" show="x"/>
+                    <field name="ip.hidden" showname="Hidden" hide="yes" show="x"/>
                   </proto>
                 </packet></pdml>""";
         var tree = PdmlTree.parse(pdml);

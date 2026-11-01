@@ -93,6 +93,8 @@ public class SecurityConfig {
             .authorizeHttpRequests(a -> a
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(PUBLIC).permitAll()
+                // one-time ticket download (see DownloadTickets); the ticket is the authorisation
+                .requestMatchers(HttpMethod.GET, "/api/v1/captures/download").permitAll()
                 .anyRequest().authenticated())
             .oauth2ResourceServer(o -> o
                 .jwt(j -> j.decoder(jwtService.decoder()).jwtAuthenticationConverter(converter))

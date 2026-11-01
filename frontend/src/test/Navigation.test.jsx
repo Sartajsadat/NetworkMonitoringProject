@@ -20,9 +20,21 @@ describe('Sidebar', () => {
 
   it('marks unbuilt modules as disabled with their phase instead of linking to them', () => {
     renderWithAuth(<Sidebar />, { user: makeUser(['NETWORK_ADMIN']) });
+    expect(screen.queryByRole('link', { name: /firewall/i })).not.toBeInTheDocument();
+    const item = screen.getByText('Firewall integrations').closest('[aria-disabled="true"]');
+    expect(item).toHaveTextContent('Phase 7');
+  });
+
+  it('shows packet capture pages only to roles allowed to see captures', () => {
+    renderWithAuth(<Sidebar />, { user: makeUser(['SECURITY_ANALYST']) });
+    expect(screen.getByRole('link', { name: /packet analyzer/i })).toHaveAttribute('href', '/analyzer');
+    expect(screen.getByRole('link', { name: /^captures/i })).toHaveAttribute('href', '/captures');
+  });
+
+  it('hides packet capture pages from read-only and infrastructure users', () => {
+    renderWithAuth(<Sidebar />, { user: makeUser(['READ_ONLY', 'INFRASTRUCTURE_ADMIN']) });
     expect(screen.queryByRole('link', { name: /packet analyzer/i })).not.toBeInTheDocument();
-    const item = screen.getByText('Packet analyzer').closest('[aria-disabled="true"]');
-    expect(item).toHaveTextContent('Phase 4');
+    expect(screen.queryByText('Packet analyzer')).not.toBeInTheDocument();
   });
 });
 

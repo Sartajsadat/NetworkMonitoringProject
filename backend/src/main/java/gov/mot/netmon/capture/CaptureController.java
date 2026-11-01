@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import gov.mot.netmon.common.ApiException;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
@@ -56,9 +58,11 @@ public class CaptureController {
     static final String MANAGE = "hasAnyRole('SUPER_ADMIN','NETWORK_ADMIN')";
 
     private final CaptureService service;
+    private final DownloadTickets tickets;
 
-    public CaptureController(CaptureService service) {
+    public CaptureController(CaptureService service, DownloadTickets tickets) {
         this.service = service;
+        this.tickets = tickets;
     }
 
     @GetMapping
@@ -136,7 +140,34 @@ public class CaptureController {
     @PreAuthorize(MANAGE)
     @Operation(summary = "Download the capture as PCAPNG (audited)")
     public ResponseEntity<StreamingResponseBody> download(@PathVariable UUID id) {
-        PacketCapture c = service.prepareDownload(id);
+        return stream(service.prepareDownload(id));
+    }
+
+    public record TicketResponse(String ticket, String url, long expiresInSeconds) {
+    }
+
+    @PostMapping("/{id}/download-ticket")
+    @PreAuthorize(MANAGE)
+    @Operation(summary = "One-time link (60 s) so the browser can download the PCAPNG file natively")
+    public TicketResponse downloadTicket(@PathVariable UUID id) {
+        service.checkDownloadable(id);
+        var user = gov.mot.netmon.security.CurrentUser.require();
+        String ticket = tickets.issue(id, user.id(), user.username());
+        return new TicketResponse(ticket, "/api/v1/captures/download?ticket=" + ticket, DownloadTickets.TTL.toSeconds());
+    }
+
+    @GetMapping("/download")
+    @PreAuthorize("permitAll()") // authorised by the one-time ticket, issued only to capture managers
+    @Operation(summary = "Download with a one-time ticket (audited as the user who requested it)")
+    public ResponseEntity<StreamingResponseBody> downloadWithTicket(@RequestParam String ticket) {
+        DownloadTickets.Ticket t = tickets.redeem(ticket);
+        if (t == null) throw new ApiException(org.springframework.http.HttpStatus.FORBIDDEN, "INVALID_TICKET",
+                "This download link is invalid or has expired. Start the download again.");
+        return stream(service.prepareDownload(t.captureId(), t.userId(), t.username()));
+    }
+
+    private ResponseEntity<StreamingResponseBody> stream(PacketCapture c) {
+        UUID id = c.getId();
         String safeName = c.getName().replaceAll("[^A-Za-z0-9._-]", "_");
         String file = "capture-" + safeName + "-" + DateTimeFormatter.ofPattern("yyyyMMdd-HHmm").withZone(ZoneOffset.UTC)
                 .format(c.getRequestedAt()) + ".pcapng";

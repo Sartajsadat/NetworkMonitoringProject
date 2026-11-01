@@ -43,6 +43,10 @@ const STATUS = {
   UNAVAILABLE: { bg: 'secondary', icon: 'dash-circle' },
   PERMISSION_DENIED: { bg: 'warning', icon: 'lock-fill' },
   ERROR: { bg: 'danger', icon: 'exclamation-octagon-fill' },
+  // packet captures
+  PENDING: { bg: 'info', icon: 'hourglass-split' },
+  COMPLETED: { bg: 'success', icon: 'check-circle-fill' },
+  NOT_ENABLED: { bg: 'secondary', icon: 'toggle-off' },
   // interface operational state
   IF_UP: { bg: 'success', icon: 'arrow-up-circle-fill' },
   IF_DOWN: { bg: 'secondary', icon: 'arrow-down-circle' },

@@ -61,7 +61,8 @@ public final class PdmlTree {
 
     private static TreeNode node(Element e, int[] budget) {
         if (budget[0]-- <= 0) return null;
-        if ("1".equals(e.getAttribute("hide"))) return null;
+        String hide = e.getAttribute("hide"); // TShark writes hide="yes" for fields Wireshark does not display
+        if ("yes".equalsIgnoreCase(hide) || "1".equals(hide) || "true".equalsIgnoreCase(hide)) return null;
         String name = e.getAttribute("name");
         String label = e.getAttribute("showname");
         if (label.isEmpty()) label = e.getAttribute("show");

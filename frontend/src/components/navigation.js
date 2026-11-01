@@ -22,8 +22,8 @@ export const NAV_SECTIONS = [
   {
     title: 'nav.section.network',
     items: [
-      { label: 'nav.packetAnalyzer', icon: 'diagram-3', phase: 4 },
-      { label: 'nav.captures', icon: 'record-circle', phase: 4 },
+      { to: '/analyzer', label: 'nav.packetAnalyzer', icon: 'diagram-3', roles: PERMISSIONS.viewCaptures },
+      { to: '/captures', label: 'nav.captures', icon: 'record-circle', roles: PERMISSIONS.viewCaptures },
       { label: 'nav.traffic', icon: 'arrow-left-right', phase: 6 },
       { label: 'nav.ipAddresses', icon: 'geo', phase: 6 },
       { label: 'nav.subnets', icon: 'diagram-2', phase: 6 },
