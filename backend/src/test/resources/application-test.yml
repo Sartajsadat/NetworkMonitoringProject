@@ -1,0 +1,10 @@
+app:
+  security:
+    jwt-secret: dGVzdC1vbmx5LXNlY3JldC10ZXN0LW9ubHktc2VjcmV0LXRlc3Qtb25seS1zZWNyZXQ=
+    refresh-cookie-secure: false
+    login-rate-limit-per-minute: 1000
+  bootstrap:
+    setup-token: test-setup-token-0123456789abcdef
+logging:
+  level:
+    gov.mot.netmon: INFO

@@ -1,0 +1,56 @@
+# Central platform: PostgreSQL + Spring Boot backend + nginx-served React frontend.
+# Monitoring agents (Phase 2+) are installed separately on monitored servers, not here.
+#
+#   cp .env.example .env   # then fill in the secrets
+#   docker compose up -d --build
+#
+name: netmon
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-netmon}
+      POSTGRES_USER: ${DB_USERNAME:-netmon}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Not published to the host. Uncomment only for local debugging:
+    # ports: ["127.0.0.1:5432:5432"]
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${DB_NAME:-netmon}
+      DB_USERNAME: ${DB_USERNAME:-netmon}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-PT15M}
+      REFRESH_TOKEN_TTL: ${REFRESH_TOKEN_TTL:-PT8H}
+      REFRESH_COOKIE_SECURE: ${REFRESH_COOKIE_SECURE:-true}
+      BOOTSTRAP_SETUP_TOKEN: ${BOOTSTRAP_SETUP_TOKEN:-}
+      API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
+      LOG_FORMAT: ${LOG_FORMAT:-}
+      TZ: UTC
+    # No host port: reached only through the frontend's reverse proxy.
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8088}:8080"
+
+volumes:
+  db-data:
