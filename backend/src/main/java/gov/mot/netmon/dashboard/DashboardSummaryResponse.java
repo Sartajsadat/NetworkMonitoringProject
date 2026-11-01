@@ -24,6 +24,7 @@ public record DashboardSummaryResponse(
 
     public enum Availability { AVAILABLE, NOT_COLLECTED, NOT_CONFIGURED, UNSUPPORTED }
 
-    public record ModuleStatus(String module, Availability availability, String message) {
+    /** {@code key} is a stable identifier the UI uses to translate the module name and message. */
+    public record ModuleStatus(String key, String module, Availability availability, String message) {
     }
 }

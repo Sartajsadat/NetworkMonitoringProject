@@ -1,7 +1,6 @@
+import { useI18n } from '../i18n/I18nContext.jsx';
+
 export default function PasswordHint() {
-  return (
-    <div className="form-text">
-      At least 12 characters, using three of: lower-case, upper-case, digits, symbols. Must not contain the username.
-    </div>
-  );
+  const { t } = useI18n();
+  return <div className="form-text">{t('password.hint')}</div>;
 }

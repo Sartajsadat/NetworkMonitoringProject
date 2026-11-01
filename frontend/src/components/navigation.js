@@ -1,61 +1,58 @@
 import { PERMISSIONS, ROLES } from '../auth/roles.js';
 
 /**
- * Sidebar structure. Items with `phase` are planned modules that are not built yet:
- * they are shown disabled with their phase number so nobody mistakes them for working features.
+ * Sidebar structure (labels are translation keys). Items with `phase` are planned modules that
+ * are not built yet: shown disabled with their phase so nobody mistakes them for working features.
  */
 export const NAV_SECTIONS = [
+  { title: 'nav.section.overview', items: [{ to: '/', label: 'nav.dashboard', icon: 'speedometer2', end: true }] },
   {
-    title: 'Overview',
-    items: [{ to: '/', label: 'Dashboard', icon: 'speedometer2', end: true }],
-  },
-  {
-    title: 'Infrastructure',
+    title: 'nav.section.infrastructure',
     items: [
-      { to: '/servers', label: 'Server inventory', icon: 'hdd-stack' },
-      { to: '/server-groups', label: 'Server groups', icon: 'collection' },
-      { label: 'CPU & memory', icon: 'cpu', phase: 2 },
-      { label: 'Disks', icon: 'device-hdd', phase: 2 },
-      { label: 'Network interfaces', icon: 'ethernet', phase: 2 },
-      { label: 'Processes & services', icon: 'list-task', phase: 2 },
-      { label: 'Agents', icon: 'broadcast', phase: 2 },
-      { label: 'Hosted applications', icon: 'window-stack', phase: 5 },
+      { to: '/servers', label: 'nav.servers', icon: 'hdd-stack' },
+      { to: '/server-groups', label: 'nav.serverGroups', icon: 'collection' },
+      { label: 'nav.cpuMemory', icon: 'cpu', phase: 2 },
+      { label: 'nav.disks', icon: 'device-hdd', phase: 2 },
+      { label: 'nav.interfaces', icon: 'ethernet', phase: 2 },
+      { label: 'nav.processes', icon: 'list-task', phase: 2 },
+      { label: 'nav.agents', icon: 'broadcast', phase: 2 },
+      { label: 'nav.applications', icon: 'window-stack', phase: 5 },
     ],
   },
   {
-    title: 'Network',
+    title: 'nav.section.network',
     items: [
-      { label: 'Packet analyzer', icon: 'diagram-3', phase: 4 },
-      { label: 'Captures', icon: 'record-circle', phase: 4 },
-      { label: 'Traffic & conversations', icon: 'arrow-left-right', phase: 6 },
-      { label: 'IP addresses', icon: 'geo', phase: 6 },
-      { label: 'Subnets', icon: 'diagram-2', phase: 6 },
-      { label: 'Network devices', icon: 'router', phase: 6 },
+      { label: 'nav.packetAnalyzer', icon: 'diagram-3', phase: 4 },
+      { label: 'nav.captures', icon: 'record-circle', phase: 4 },
+      { label: 'nav.traffic', icon: 'arrow-left-right', phase: 6 },
+      { label: 'nav.ipAddresses', icon: 'geo', phase: 6 },
+      { label: 'nav.subnets', icon: 'diagram-2', phase: 6 },
+      { label: 'nav.networkDevices', icon: 'router', phase: 6 },
     ],
   },
   {
-    title: 'Access control',
+    title: 'nav.section.accessControl',
     items: [
-      { label: 'Firewall integrations', icon: 'bricks', phase: 7 },
-      { label: 'IP allow / block', icon: 'shield-lock', phase: 7 },
-      { label: 'Application access', icon: 'app-indicator', phase: 8 },
+      { label: 'nav.firewall', icon: 'bricks', phase: 7 },
+      { label: 'nav.ipPolicies', icon: 'shield-lock', phase: 7 },
+      { label: 'nav.appAccess', icon: 'app-indicator', phase: 8 },
     ],
   },
   {
-    title: 'Investigation',
+    title: 'nav.section.investigation',
     items: [
-      { label: 'Event timeline', icon: 'clock-history', phase: 5 },
-      { label: 'Logs', icon: 'journal-text', phase: 5 },
-      { label: 'Alerts', icon: 'bell', phase: 5 },
-      { to: '/audit-logs', label: 'Audit log', icon: 'shield-check', roles: PERMISSIONS.viewAudit },
+      { label: 'nav.timeline', icon: 'clock-history', phase: 5 },
+      { label: 'nav.logs', icon: 'journal-text', phase: 5 },
+      { label: 'nav.alerts', icon: 'bell', phase: 5 },
+      { to: '/audit-logs', label: 'nav.audit', icon: 'shield-check', roles: PERMISSIONS.viewAudit },
     ],
   },
   {
-    title: 'Administration',
+    title: 'nav.section.administration',
     items: [
-      { to: '/users', label: 'Users & roles', icon: 'people', roles: [ROLES.SUPER_ADMIN] },
-      { label: 'System configuration', icon: 'sliders', phase: 9, roles: [ROLES.SUPER_ADMIN] },
-      { label: 'Retention & storage', icon: 'database-gear', phase: 9, roles: [ROLES.SUPER_ADMIN] },
+      { to: '/users', label: 'nav.users', icon: 'people', roles: [ROLES.SUPER_ADMIN] },
+      { label: 'nav.config', icon: 'sliders', phase: 9, roles: [ROLES.SUPER_ADMIN] },
+      { label: 'nav.retention', icon: 'database-gear', phase: 9, roles: [ROLES.SUPER_ADMIN] },
     ],
   },
 ];

@@ -4,18 +4,20 @@ import { groupApi } from '../api/endpoints.js';
 import { useApi } from '../api/useApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { PERMISSIONS } from '../auth/roles.js';
+import { useI18n } from '../i18n/I18nContext.jsx';
 import ConfirmDialog from '../components/ConfirmDialog.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import ErrorAlert from '../components/ErrorAlert.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import Modal from '../components/Modal.jsx';
 import PageHeader from '../components/PageHeader.jsx';
-import { GROUP_TYPE_LABELS } from './labels.js';
+import { GROUP_TYPES } from './labels.js';
 
 const EMPTY = { name: '', groupType: 'DEPARTMENT', description: '' };
 
 export default function ServerGroupsPage() {
   const { can } = useAuth();
+  const { t, formatNumber } = useI18n();
   const canManage = can(PERMISSIONS.manageServers);
   const { data, error, loading, reload } = useApi(() => groupApi.list(), []);
   const [editing, setEditing] = useState(null); // null | 'new' | group
@@ -60,31 +62,30 @@ export default function ServerGroupsPage() {
 
   return (
     <>
-      <PageHeader title="Server groups" subtitle="Group servers by department, environment, application or server role."
-        breadcrumbs={[{ label: 'Server groups' }]}
+      <PageHeader title={t('groups.title')} subtitle={t('groups.subtitle')} breadcrumbs={[{ label: t('groups.title') }]}
         actions={canManage && <button type="button" className="btn btn-primary btn-sm" onClick={() => open(null)}>
-          <i className="bi bi-plus-lg me-1" aria-hidden="true" />New group</button>} />
+          <i className="bi bi-plus-lg me-1" aria-hidden="true" />{t('groups.new')}</button>} />
       <ErrorAlert error={error} onRetry={reload} />
       {!editing && <ErrorAlert error={formError} />}
       {loading && !data && <LoadingSpinner />}
-      {data && data.length === 0 && <div className="card"><EmptyState icon="collection" title="No server groups yet" /></div>}
+      {data && data.length === 0 && <div className="card"><EmptyState icon="collection" title={t('groups.empty')} /></div>}
       {data && data.length > 0 && (
         <div className="card table-responsive">
-          <table className="table mb-0 nm-table">
-            <thead><tr><th>Name</th><th>Type</th><th>Description</th><th className="text-end">Servers</th>{canManage && <th />}</tr></thead>
+          <table className="table nm-table">
+            <thead><tr><th>{t('groups.col.name')}</th><th>{t('groups.col.type')}</th><th>{t('groups.col.description')}</th><th className="text-end">{t('groups.col.servers')}</th>{canManage && <th />}</tr></thead>
             <tbody>
               {data.map((g) => (
                 <tr key={g.id}>
                   <td>{g.name}</td>
-                  <td>{GROUP_TYPE_LABELS[g.groupType]}</td>
+                  <td>{t(`groupType.${g.groupType}`)}</td>
                   <td className="small text-body-secondary">{g.description || '—'}</td>
-                  <td className="text-end"><Link to={`/servers?groupId=${g.id}`}>{g.memberCount}</Link></td>
+                  <td className="text-end"><Link to={`/servers?groupId=${g.id}`}>{formatNumber(g.memberCount)}</Link></td>
                   {canManage && (
                     <td className="text-end text-nowrap">
-                      <button type="button" className="btn btn-sm btn-outline-secondary me-1" onClick={() => open(g)} aria-label={`Edit ${g.name}`}>
+                      <button type="button" className="btn btn-sm btn-outline-secondary me-1" onClick={() => open(g)} aria-label={t('groups.editAria', { name: g.name })}>
                         <i className="bi bi-pencil" aria-hidden="true" />
                       </button>
-                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setToDelete(g)} aria-label={`Delete ${g.name}`}>
+                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setToDelete(g)} aria-label={t('groups.deleteAria', { name: g.name })}>
                         <i className="bi bi-trash" aria-hidden="true" />
                       </button>
                     </td>
@@ -96,33 +97,33 @@ export default function ServerGroupsPage() {
         </div>
       )}
 
-      <Modal show={Boolean(editing)} title={editing === 'new' ? 'New server group' : 'Edit server group'} onClose={() => setEditing(null)}>
+      <Modal show={Boolean(editing)} title={editing === 'new' ? t('groups.modalNew') : t('groups.modalEdit')} onClose={() => setEditing(null)}>
         <form onSubmit={save}>
           <ErrorAlert error={formError} />
           <div className="mb-3">
-            <label htmlFor="g-name" className="form-label">Name</label>
+            <label htmlFor="g-name" className="form-label">{t('groups.name')}</label>
             <input id="g-name" className="form-control" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required maxLength={120} />
           </div>
           <div className="mb-3">
-            <label htmlFor="g-type" className="form-label">Type</label>
+            <label htmlFor="g-type" className="form-label">{t('groups.type')}</label>
             <select id="g-type" className="form-select" value={form.groupType} onChange={(e) => setForm({ ...form, groupType: e.target.value })}>
-              {Object.entries(GROUP_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              {GROUP_TYPES.map((k) => <option key={k} value={k}>{t(`groupType.${k}`)}</option>)}
             </select>
           </div>
           <div className="mb-3">
-            <label htmlFor="g-desc" className="form-label">Description</label>
+            <label htmlFor="g-desc" className="form-label">{t('groups.description')}</label>
             <textarea id="g-desc" className="form-control" rows={2} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={500} />
           </div>
           <div className="d-flex justify-content-end gap-2">
-            <button type="button" className="btn btn-outline-secondary" onClick={() => setEditing(null)}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={busy}>Save</button>
+            <button type="button" className="btn btn-outline-secondary" onClick={() => setEditing(null)}>{t('common.cancel')}</button>
+            <button type="submit" className="btn btn-primary" disabled={busy}>{t('common.save')}</button>
           </div>
         </form>
       </Modal>
 
-      <ConfirmDialog show={Boolean(toDelete)} title="Delete group?" confirmLabel="Delete group" busy={busy}
+      <ConfirmDialog show={Boolean(toDelete)} title={t('groups.deleteTitle')} confirmLabel={t('groups.deleteConfirm')} busy={busy}
         onConfirm={remove} onCancel={() => setToDelete(null)}>
-        Delete <strong>{toDelete?.name}</strong>? Servers in it are not deleted; they are only removed from the group.
+        {t('groups.deleteBody', { name: toDelete?.name || '' })}
       </ConfirmDialog>
     </>
   );

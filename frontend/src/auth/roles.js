@@ -7,14 +7,6 @@ export const ROLES = {
   READ_ONLY: 'READ_ONLY',
 };
 
-export const ROLE_LABELS = {
-  SUPER_ADMIN: 'Super admin',
-  INFRASTRUCTURE_ADMIN: 'Infrastructure admin',
-  NETWORK_ADMIN: 'Network admin',
-  SECURITY_ANALYST: 'Security analyst',
-  READ_ONLY: 'Read-only',
-};
-
 /**
  * UI permissions. These only decide which buttons and links are shown;
  * the backend enforces the same rules on every request.

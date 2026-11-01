@@ -1,14 +1,9 @@
-export const OS_LABELS = { LINUX: 'Linux', WINDOWS: 'Windows', OTHER: 'Other' };
-export const ENV_LABELS = { DEVELOPMENT: 'Development', TESTING: 'Testing', STAGING: 'Staging', PRODUCTION: 'Production' };
-export const GROUP_TYPE_LABELS = {
-  DEPARTMENT: 'Department',
-  ENVIRONMENT: 'Environment',
-  APPLICATION: 'Application',
-  SERVER_ROLE: 'Server role',
-  CUSTOM: 'Custom',
-};
+export const OS_CODES = ['LINUX', 'WINDOWS', 'OTHER'];
+export const ENV_CODES = ['DEVELOPMENT', 'TESTING', 'STAGING', 'PRODUCTION'];
+export const GROUP_TYPES = ['DEPARTMENT', 'ENVIRONMENT', 'APPLICATION', 'SERVER_ROLE', 'CUSTOM'];
 export const MONITORING_STATUSES = ['PENDING_AGENT', 'ACTIVE', 'PAUSED', 'DECOMMISSIONED'];
 
-export function toChartData(map, labels) {
-  return Object.entries(map || {}).map(([k, v]) => ({ name: labels[k] || k, value: v }));
+/** {CODE: count} -> [{name: translated label, value}] for charts. */
+export function toChartData(map, prefix, t) {
+  return Object.entries(map || {}).map(([k, v]) => ({ name: t(`${prefix}.${k}`), value: v }));
 }

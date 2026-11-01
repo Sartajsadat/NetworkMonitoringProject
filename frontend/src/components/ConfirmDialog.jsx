@@ -1,16 +1,11 @@
 import { useEffect, useRef } from 'react';
+import { useI18n } from '../i18n/I18nContext.jsx';
 
 /** Accessible confirmation modal rendered with Bootstrap classes (no Bootstrap JS needed). */
 export default function ConfirmDialog({
-  show,
-  title,
-  children,
-  confirmLabel = 'Confirm',
-  confirmVariant = 'danger',
-  busy = false,
-  onConfirm,
-  onCancel,
+  show, title, children, confirmLabel, confirmVariant = 'danger', busy = false, onConfirm, onCancel,
 }) {
+  const { t } = useI18n();
   const cancelRef = useRef(null);
   useEffect(() => {
     if (show) cancelRef.current?.focus();
@@ -33,7 +28,7 @@ export default function ConfirmDialog({
             <div className="modal-body">{children}</div>
             <div className="modal-footer">
               <button ref={cancelRef} type="button" className="btn btn-outline-secondary" onClick={onCancel} disabled={busy}>
-                Cancel
+                {t('common.cancel')}
               </button>
               <button type="button" className={`btn btn-${confirmVariant}`} onClick={onConfirm} disabled={busy}>
                 {busy && <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" />}

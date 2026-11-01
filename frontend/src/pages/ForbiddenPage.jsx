@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import EmptyState from '../components/EmptyState.jsx';
+import { useI18n } from '../i18n/I18nContext.jsx';
 
 export default function ForbiddenPage() {
+  const { t } = useI18n();
   return (
-    <EmptyState icon="shield-lock" title="You do not have permission to view this page">
-      Ask a super administrator if you need access. <Link to="/">Back to the dashboard</Link>
+    <EmptyState icon="shield-lock" title={t('forbidden.title')}>
+      {t('forbidden.body')} <Link to="/">{t('notFound.back')}</Link>
     </EmptyState>
   );
 }

@@ -77,16 +77,24 @@ api.interceptors.response.use(
   },
 );
 
-/** Turns any axios error into a readable message, including the backend request ID. */
-export function errorMessage(error) {
+/**
+ * Turns any axios error into a readable message. With a translator `t`, known backend error
+ * codes are shown in the user's language; otherwise the backend's English message is used.
+ */
+export function errorMessage(error, t) {
+  const tr = (key, vars) => (t ? t(key, vars) : null);
   const data = error?.response?.data;
-  if (data?.message) {
+  if (data?.code || data?.message) {
+    const translated = data.code ? tr(`errors.${data.code}`) : null;
+    const base = translated && translated !== `errors.${data.code}` ? translated : data.message;
     const fields = data.fieldErrors?.map((f) => `${f.field}: ${f.message}`).join('; ');
-    return fields ? `${data.message} (${fields})` : data.message;
+    return fields ? `${base} (${fields})` : base;
   }
-  if (error?.code === 'ECONNABORTED') return 'The server did not respond in time.';
-  if (!error?.response) return 'Cannot reach the server. Check your network connection or whether the backend is running.';
-  return `Request failed with status ${error.response.status}.`;
+  if (error?.code === 'ECONNABORTED') return tr('errors.timeout') || 'The server did not respond in time.';
+  if (!error?.response) {
+    return tr('errors.network') || 'Cannot reach the server. Check your network connection or whether the backend is running.';
+  }
+  return tr('errors.status', { status: error.response.status }) || `Request failed with status ${error.response.status}.`;
 }
 
 export function errorRequestId(error) {

@@ -87,13 +87,13 @@ public class DashboardService {
     /** Honest status of each telemetry module in this release. Updated as phases are delivered. */
     private static List<ModuleStatus> modules() {
         return List.of(
-                new ModuleStatus("System metrics (CPU, memory, disk, network)", Availability.NOT_COLLECTED,
+                new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.NOT_COLLECTED,
                         "No monitoring agent is installed yet. Agents arrive in Phase 2 (Linux) and Phase 3 (Windows)."),
-                new ModuleStatus("Packet capture", Availability.NOT_CONFIGURED,
+                new ModuleStatus("capture", "Packet capture", Availability.NOT_CONFIGURED,
                         "Packet capture integration (dumpcap/TShark) arrives in Phase 4."),
-                new ModuleStatus("Alerts and event timeline", Availability.NOT_CONFIGURED,
+                new ModuleStatus("alerts", "Alerts and event timeline", Availability.NOT_CONFIGURED,
                         "Alert rules and event correlation arrive in Phase 5."),
-                new ModuleStatus("Firewall integrations", Availability.NOT_CONFIGURED,
+                new ModuleStatus("firewall", "Firewall integrations", Availability.NOT_CONFIGURED,
                         "No firewall integration is configured. Dry-run adapter arrives in Phase 7."));
     }
 }

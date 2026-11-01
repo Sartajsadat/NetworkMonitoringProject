@@ -12,11 +12,13 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, folder layout, phases, database design, security boundaries |
 | [docs/PHASE-1.md](docs/PHASE-1.md) | What Phase 1 delivered, how it works, how to verify it, limitations |
+| [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 
 ## Stack
 
 - **Backend:** Java 21, Spring Boot 3.5, Spring Security (JWT), Spring Data JPA, Flyway, PostgreSQL 16, springdoc OpenAPI
-- **Frontend:** React 18 + Vite (JavaScript/JSX), Bootstrap 5, React Router, Axios, Recharts
+- **Frontend:** React 18 + Vite 7 (JavaScript/JSX), Bootstrap 5 (LTR + RTL), React Router, Axios, Recharts
+- **Languages:** English, پښتو (Pashto), دری (Dari) with full right-to-left layout
 - **Deployment:** Docker Compose (PostgreSQL + backend + nginx-served frontend)
 
 ## Quick start with Docker (Ubuntu or Windows)
@@ -67,7 +69,7 @@ Enter the token and create the first super administrator. There are no default a
 | Tool | Version | Ubuntu | Windows |
 |---|---|---|---|
 | JDK | 21 | `sudo apt install openjdk-21-jdk` | [Eclipse Temurin 21](https://adoptium.net) MSI, tick "Set JAVA_HOME" |
-| Node.js | 22 LTS (≥ 22.12) | [NodeSource](https://github.com/nodesource/distributions) or `nvm` | [nodejs.org](https://nodejs.org) installer |
+| Node.js | 22 LTS (≥ 20.19 or 22.12) | [NodeSource](https://github.com/nodesource/distributions) or `nvm` | [nodejs.org](https://nodejs.org) installer |
 | PostgreSQL | 16 | `sudo apt install postgresql-16` | [EDB installer](https://www.postgresql.org/download/windows/) or the compose `db` service |
 | Docker | optional for dev, **required for backend tests** (Testcontainers) | `docker.io` / Docker CE | Docker Desktop |
 
@@ -118,6 +120,9 @@ cd frontend
 npm ci
 npm run dev
 ```
+
+On Windows PowerShell, if `npm` is blocked by the script execution policy, use `npm.cmd ci`
+and `npm.cmd run dev`.
 
 Open <http://localhost:5173>. Vite proxies `/api` to `http://localhost:8080`
 (override with `VITE_BACKEND_URL`).

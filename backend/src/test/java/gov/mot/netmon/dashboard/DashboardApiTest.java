@@ -27,6 +27,7 @@ class DashboardApiTest extends IntegrationTest {
                 .andExpect(jsonPath("$.connection.NO_AGENT").value(1))
                 .andExpect(jsonPath("$.connection.ONLINE").value(0))
                 .andExpect(jsonPath("$.byOsFamily.WINDOWS").value(1))
+                .andExpect(jsonPath("$.modules[0].key").value("metrics"))
                 .andExpect(jsonPath("$.modules[0].availability").value("NOT_COLLECTED"))
                 .andExpect(jsonPath("$.recentSecurityEvents").isArray());
     }
