@@ -3,16 +3,19 @@
 Central platform for the Ministry of Telecommunication to monitor ministry-hosted servers,
 analyse network traffic, investigate incidents and (later) manage IP access rules.
 
-> **Status: Phase 4 of 9 done (packet analyzer).** Done so far:
+> **Status: Phase 5 of 9 done (event timeline and alerts).** Done so far:
 > - authentication, users, server inventory and the audit log;
 > - English/Pashto/Dari UI;
 > - monitoring agents for Linux and Windows (live and historical CPU, memory, disk, network,
 >   service and process data);
-> - packet capture with dumpcap on the servers and analysis with TShark on the platform.
+> - packet capture with dumpcap on the servers and analysis with TShark on the platform;
+> - an event timeline (service changes, restarts, disconnections, captures, security events) and
+>   configurable alert rules with acknowledgement.
 >
 > The Windows agent and Windows capture still need a test on a real Windows server: see
-> docs/PHASE-3.md and docs/PHASE-4.md. Alerts and firewall control arrive in later phases and are
-> shown in the UI as *not available yet*, never with placeholder numbers.
+> docs/PHASE-3.md and docs/PHASE-4.md. Centralized logs and the hosted-application inventory
+> (marked "Phase 5b"), IP inventory and firewall control arrive later and are shown in the UI as
+> *not available yet*, never with placeholder numbers.
 
 | Document | Contents |
 |---|---|
@@ -25,6 +28,7 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 | [docs/AGENT-PROTOCOL.md](docs/AGENT-PROTOCOL.md) | Agent ↔ platform API |
 | [docs/PHASE-4.md](docs/PHASE-4.md) | Packet analyzer: how capture and analysis work, Windows test checklist |
 | [docs/PACKET-CAPTURE.md](docs/PACKET-CAPTURE.md) | Enabling capture, visibility levels, filters, roles, troubleshooting |
+| [docs/PHASE-5.md](docs/PHASE-5.md) | Event timeline, correlation, alert rules, acknowledgement, data gaps |
 | [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 
 ## Stack
@@ -201,6 +205,9 @@ All configuration comes from the environment; see [.env.example](.env.example).
 | `CAPTURE_MAX_DURATION_SECONDS` / `CAPTURE_MAX_BYTES` | no | `3600` / 1 GB | Upper limits for one capture |
 | `CAPTURE_DEFAULT_RETENTION_DAYS` / `CAPTURE_MAX_RETENTION_DAYS` | no | `7` / `90` | Automatic deletion of capture files |
 | `TSHARK_PATH` | no | `/usr/bin/tshark` | TShark used to analyse captures (included in the Docker image) |
+| `EVENTS_RETENTION` / `ALERTS_RESOLVED_RETENTION` | no | `P180D` / `P365D` | How long timeline events and resolved alerts are kept |
+| `EVENTS_MAX_PER_SERVER_PER_HOUR` | no | `600` | Flood protection for the timeline |
+| `ALERT_EVALUATION_INTERVAL` | no | `PT1M` | How often alert rules are evaluated |
 | `HTTP_BIND` / `HTTP_PORT` | no | `127.0.0.1` / `8088` | Where compose publishes the UI |
 
 ## Repository layout

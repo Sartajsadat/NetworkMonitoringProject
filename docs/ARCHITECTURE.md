@@ -192,8 +192,10 @@ snapshot replaced separate interface/service/process tables.
 
 PCAPNG files are on disk under `CAPTURE_STORAGE_DIR`, not in the database. See PHASE-4.md.
 
-**Planned tables (later phases)**: `system_events`, `alerts`, `alert_rules`, `alert_events`,
-`log_entries` (P5); `subnets`, `ip_addresses`, `network_devices`, `network_flows` (P6);
+**Phase 5 tables (done)**: `events` (the timeline; correlation id, links to alerts and
+captures), `alert_rules`, `alerts` (deduplicated: one active row per rule and resource). See PHASE-5.md.
+
+**Planned tables (later phases)**: `log_entries` (P5b); `subnets`, `ip_addresses`, `network_devices`, `network_flows` (P6);
 `firewall_integrations`, `firewall_rules`, `access_policy_requests`,
 `access_policy_approvals` (P7); `application_inventory`, `application_access_policies` (P8);
 `retention_policies`, `notification_settings` (P5/P9).
