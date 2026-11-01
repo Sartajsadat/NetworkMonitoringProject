@@ -29,7 +29,14 @@ public final class AgentProtocol {
     private AgentProtocol() {
     }
 
-    public static final String NAME_PATTERN = "^[\\p{Alnum}@._:/+-]{1,128}$";
+    /** Service names: systemd units (nginx.service) and Windows services (W3SVC, MSSQL$SQLEXPRESS). */
+    public static final String NAME_PATTERN = "^[\\p{Alnum}@._:/+$-]{1,128}$";
+    /**
+     * Interface and disk device names. Windows adapter names contain spaces and brackets
+     * ("vEthernet (Default Switch)"), so any printable text is accepted; control characters are not.
+     * These values are only ever stored and queried as bound parameters.
+     */
+    public static final String RESOURCE_PATTERN = "^[^\\p{Cntrl}]{1,128}$";
 
     // ---------------- enrollment ----------------
 
@@ -139,7 +146,7 @@ public final class AgentProtocol {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record DiskIo(
-            @NotBlank @Pattern(regexp = NAME_PATTERN) String device,
+            @NotBlank @Pattern(regexp = RESOURCE_PATTERN) String device,
             @PositiveOrZero Double readBytesPerSec,
             @PositiveOrZero Double writeBytesPerSec,
             @PositiveOrZero Double readOpsPerSec,
@@ -149,7 +156,7 @@ public final class AgentProtocol {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record NetworkInterface(
-            @NotBlank @Pattern(regexp = NAME_PATTERN) String name,
+            @NotBlank @Pattern(regexp = RESOURCE_PATTERN) String name,
             @Size(max = 20) String operState,
             @Size(max = 32) String macAddress,
             @Size(max = 32) List<@Size(max = 64) String> addresses,

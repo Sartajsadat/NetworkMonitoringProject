@@ -104,8 +104,8 @@ public class AgentRunner {
         while (running) {
             try {
                 if (revoked) {
-                    log.severe("This agent's credential was revoked by an administrator. Re-enroll with a new token: "
-                            + "sudo -u netmon-agent java -jar /opt/netmon-agent/netmon-agent.jar enroll --token <TOKEN>");
+                    log.severe("This agent's credential was revoked by an administrator. Create a new enrollment token in "
+                            + "the web UI and run 'netmon-agent enroll --token <TOKEN>' (see docs/AGENT-INSTALL.md).");
                     sleep(REVOKED_BACKOFF);
                     revoked = !tryOnce();
                     continue;

@@ -67,7 +67,10 @@ export default function ProcessesTab({ latest, canManage }) {
               </table>
             </div>
           )}
-          <div className="card-footer small text-body-secondary">{t('processes.cpuNote')}</div>
+          <div className="card-footer small text-body-secondary">
+            {t('processes.cpuNote')}
+            {latest?.report?.host?.platform === 'WINDOWS' && <> {t('processes.ownerWindows')}</>}
+          </div>
         </div>
       </div>
     </div>

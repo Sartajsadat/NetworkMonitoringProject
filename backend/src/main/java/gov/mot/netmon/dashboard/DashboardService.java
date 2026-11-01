@@ -128,9 +128,9 @@ public class DashboardService {
     private static List<ModuleStatus> modules(int reportingServers) {
         ModuleStatus metrics = reportingServers > 0
                 ? new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.AVAILABLE,
-                        reportingServers + " server(s) reporting live data. Windows agents arrive in Phase 3.")
+                        reportingServers + " server(s) reporting live data.")
                 : new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.NOT_COLLECTED,
-                        "No agent is reporting. Enroll a Linux agent from a server's page (Windows agents arrive in Phase 3).");
+                        "No agent is reporting. Enroll a Linux or Windows agent from a server's page (Agent tab).");
         return List.of(
                 metrics,
                 new ModuleStatus("capture", "Packet capture", Availability.NOT_CONFIGURED,

@@ -77,10 +77,46 @@ describe('agent enrollment', () => {
   it('rejects invalid systemd unit names before sending', async () => {
     agentApi.forServer.mockResolvedValue({ ...notEnrolled, status: 'ACTIVE', agentId: 'a1' });
     renderWithAuth(<AgentTab serverId="s1" latest={null} canManage />, { user: makeUser(['SUPER_ADMIN']) });
-    const box = await screen.findByLabelText(/systemd services/i);
+    const box = await screen.findByLabelText(/services to monitor/i);
     await userEvent.type(box, 'nginx.service{enter}bad;name');
     expect(screen.getByText(/not valid unit names: bad;name/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+  });
+});
+
+describe('Windows agents', () => {
+  beforeEach(() => {
+    agentApi.createToken.mockReset().mockResolvedValue({
+      token: 'tok-win', expiresAt: new Date(Date.now() + 86400000).toISOString(), serverId: 's1', serverName: 'app-win-01', platformUrl: 'https://netmon.example',
+    });
+  });
+
+  it('shows the PowerShell installer for Windows servers', async () => {
+    agentApi.forServer.mockReset().mockResolvedValue({ ...notEnrolled, serverOsFamily: 'WINDOWS' });
+    renderWithAuth(<AgentTab serverId="s1" latest={null} canManage />, { user: makeUser(['SUPER_ADMIN']) });
+    await userEvent.click(await screen.findByRole('button', { name: /create enrollment token/i }));
+    await screen.findByText('tok-win');
+    const cmd = document.getElementById('install-cmd').textContent;
+    expect(cmd).toContain('install-agent.ps1');
+    expect(cmd).toContain('-WinSW');
+    expect(cmd).toContain('-Token tok-win');
+    expect(screen.getByText(/LOCAL SERVICE/)).toBeInTheDocument();
+  });
+
+  it('warns when the agent OS differs from the registered OS', async () => {
+    agentApi.forServer.mockReset().mockResolvedValue({ ...notEnrolled, status: 'ACTIVE', agentId: 'a1', serverOsFamily: 'WINDOWS',
+      platform: 'LINUX', platformMismatch: true });
+    renderWithAuth(<AgentTab serverId="s1" latest={null} canManage />, { user: makeUser(['SUPER_ADMIN']) });
+    expect(await screen.findByText(/the agent runs on linux, but this server is registered as windows/i)).toBeInTheDocument();
+  });
+
+  it('shows the processor queue instead of a load average', async () => {
+    metricsApi.fleet.mockResolvedValue([
+      { serverId: 'w', name: 'app-win-01', connectionStatus: 'ONLINE', collectedAt: new Date().toISOString(), stale: false,
+        host: { platform: 'WINDOWS', cpuCount: 8 }, cpu: { usagePercent: 30, runQueue: 2 }, memory: { usedPercent: 50, usedBytes: 1, totalBytes: 2 } },
+    ]);
+    renderWithAuth(<CpuMemoryPage />);
+    expect(await screen.findByText('Processor queue 2')).toBeInTheDocument();
   });
 });
 

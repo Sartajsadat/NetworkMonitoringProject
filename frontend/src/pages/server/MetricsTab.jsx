@@ -33,8 +33,15 @@ export default function MetricsTab({ serverId, latest }) {
             lines={[{ metric: 'mem.used_pct', label: () => t('metric.memory') }, { metric: 'swap.used_pct', label: () => t('metric.swap') }]} />
         </div>
         <div className="col-xl-6">
-          <MetricChart {...common} title={t('chart.load')} unit="load"
-            lines={[{ metric: 'load.1', label: () => t('metric.load1') }, { metric: 'load.5', label: () => t('metric.load5') }, { metric: 'load.15', label: () => t('metric.load15') }]} />
+          {r?.host?.platform === 'WINDOWS' ? (
+            <div className="card h-100"><div className="card-body">
+              <h3 className="h6">{t('chart.load')}</h3>
+              <p className="small text-body-secondary mb-0">{t('chart.noLoadWindows')}</p>
+            </div></div>
+          ) : (
+            <MetricChart {...common} title={t('chart.load')} unit="load"
+              lines={[{ metric: 'load.1', label: () => t('metric.load1') }, { metric: 'load.5', label: () => t('metric.load5') }, { metric: 'load.15', label: () => t('metric.load15') }]} />
+          )}
         </div>
         <div className="col-xl-6">
           <MetricChart {...common} title={t('chart.diskUsage')} unit="percent" yMax={100}

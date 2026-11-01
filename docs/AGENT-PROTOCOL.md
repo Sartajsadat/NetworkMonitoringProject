@@ -80,6 +80,14 @@ server is *Paused* or *Decommissioned*, the heartbeat is recorded but metrics ar
 Errors: `400 CLOCK_SKEW` (more than 5 min in the future), `400 REPORT_TOO_OLD` (older than 48 h),
 `400 VALIDATION_FAILED`. The agent drops a report rejected with 400 and retries on 5xx/network errors.
 
+## Windows agents
+
+Same format, `platform: "WINDOWS"`. Differences: `cpu.load1/5/15` and `cpu.iowaitPercent` are
+absent (Windows has no such values) and `cpu.runQueue` is the processor queue length; the page file
+is reported in the `swap…` fields; disk `mount` is the drive (`C:\`); `diskIo.device` is the physical
+disk instance (`0_C:`); interface names may contain spaces and brackets; process `user` is absent;
+service `loadState` is the start mode (Auto/Manual/Disabled) and `activeState` the Windows state.
+
 ## Credential rotation — `POST /api/v1/agent/credentials/rotate`
 
 Returns `{ "secret", "previousSecretValidUntil" }`. The agent saves the new secret to disk **before**

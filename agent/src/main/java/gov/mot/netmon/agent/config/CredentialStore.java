@@ -5,6 +5,10 @@ import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.AclEntry;
+import java.nio.file.attribute.AclEntryPermission;
+import java.nio.file.attribute.AclEntryType;
+import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.PosixFileAttributeView;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
@@ -60,8 +64,30 @@ public class CredentialStore {
             if (perms.stream().anyMatch(p -> p.name().startsWith("GROUP") || p.name().startsWith("OTHERS"))) {
                 throw new IOException(file + " is readable by other users; run: chmod 600 " + file);
             }
+        } else {
+            AclFileAttributeView acl = Files.getFileAttributeView(file, AclFileAttributeView.class);
+            if (acl != null) {
+                String broad = broadReader(acl.getAcl());
+                if (broad != null) {
+                    throw new IOException(file + " is readable by '" + broad + "'. Restrict it to the agent account, "
+                            + "SYSTEM and Administrators (deploy/windows/install-agent.ps1 does this).");
+                }
+            }
         }
         return Optional.of(Json.MAPPER.readValue(file.toFile(), Credentials.class));
+    }
+
+    /** Windows: name of a broad group (Everyone, Users, Authenticated Users) that may read the file, else null. */
+    static String broadReader(java.util.List<AclEntry> entries) {
+        for (AclEntry e : entries) {
+            String who = e.principal().getName().toLowerCase(java.util.Locale.ROOT);
+            boolean broad = who.equals("everyone") || who.endsWith("\\everyone") || who.endsWith("\\users")
+                    || who.endsWith("\\authenticated users") || who.equals("users") || who.equals("authenticated users");
+            if (broad && e.type() == AclEntryType.ALLOW && e.permissions().contains(AclEntryPermission.READ_DATA)) {
+                return e.principal().getName();
+            }
+        }
+        return null;
     }
 
     public void save(Credentials c) throws IOException {

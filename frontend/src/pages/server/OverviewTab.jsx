@@ -26,6 +26,14 @@ function Tile({ label, children, hint }) {
   );
 }
 
+/** Linux: load average. Windows has none, so the processor queue length is shown instead. */
+export function cpuHint(cpu, t, units) {
+  if (!cpu) return null;
+  if (cpu.load1 != null) return `${t('metric.load')} ${units.decimal(cpu.load1)} · ${units.decimal(cpu.load5)} · ${units.decimal(cpu.load15)}`;
+  if (cpu.runQueue != null) return t('metric.queue', { n: units.decimal(cpu.runQueue, 0) });
+  return null;
+}
+
 export default function OverviewTab({ server: s, latest }) {
   const { t, units, formatDuration } = useI18n();
   const r = latest?.available ? latest.report : null;
@@ -49,7 +57,7 @@ export default function OverviewTab({ server: s, latest }) {
           </div>
         ) : (
           <div className="row g-3">
-            <Tile label={t('metric.cpu')} hint={r.cpu ? `${t('metric.load')} ${units.decimal(r.cpu.load1)} · ${units.decimal(r.cpu.load5)} · ${units.decimal(r.cpu.load15)}` : null}>
+            <Tile label={t('metric.cpu')} hint={cpuHint(r.cpu, t, units)}>
               <UsageBar value={r.cpu?.usagePercent} />
             </Tile>
             <Tile label={t('metric.memory')} hint={r.memory ? `${units.bytes(r.memory.usedBytes)} / ${units.bytes(r.memory.totalBytes)}` : null}>

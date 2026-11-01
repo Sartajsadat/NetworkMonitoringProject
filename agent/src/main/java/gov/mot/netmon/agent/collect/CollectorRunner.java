@@ -30,6 +30,8 @@ public class CollectorRunner {
             try {
                 c.collect(b, now);
                 b.collectors.add(new Report.CollectorStatus(c.name(), "OK", null));
+            } catch (CollectorException e) {
+                b.collectors.add(new Report.CollectorStatus(c.name(), e.status(), trim(e.getMessage())));
             } catch (UnsupportedOperationException e) {
                 b.collectors.add(new Report.CollectorStatus(c.name(), "UNSUPPORTED", trim(e.getMessage())));
             } catch (AccessDeniedException | SecurityException e) {

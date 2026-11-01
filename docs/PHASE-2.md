@@ -108,7 +108,7 @@ hundreds of servers, monthly partitioning of `metric_samples` is the next step (
 
 ## 3. Limitations (phase 2)
 
-- **Windows agent:** phase 3. The jar refuses to run on non-Linux systems with `UNSUPPORTED`.
+- **Windows agent:** added in phase 3 (see PHASE-3.md).
 - **systemd unit and install script** were syntax-checked but could not be run under systemd in the
   build sandbox (no systemd there). Please test `install-agent.sh` on a lab Ubuntu server first.
   For the same reason the service collector was only tested with a simulated `systemctl`; in the

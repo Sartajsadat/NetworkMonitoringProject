@@ -19,7 +19,7 @@ function Row({ label, children }) {
   );
 }
 
-const UNIT_RE = /^[A-Za-z0-9@._:-]{1,128}$/;
+const UNIT_RE = /^[A-Za-z0-9@._:$-]{1,128}$/;
 
 export default function AgentTab({ serverId, latest, canManage, onChanged }) {
   const { t, formatNumber } = useI18n();
@@ -89,9 +89,13 @@ export default function AgentTab({ serverId, latest, canManage, onChanged }) {
   if (!a) return null;
 
   const platformUrl = token?.platformUrl || window.location.origin;
-  const installCmd = token
-    ? `sudo ./deploy/linux/install-agent.sh \\\n  --jar netmon-agent.jar \\\n  --url ${platformUrl} \\\n  --token ${token.token}`
-    : '';
+  const windows = a.serverOsFamily === 'WINDOWS';
+  const os = windows ? 'windows' : 'linux';
+  // Displayed on several lines for reading; the copy button copies one line.
+  const installCmd = !token ? '' : windows
+    ? `.\\deploy\\windows\\install-agent.ps1 \`\n  -Jar .\\netmon-agent.jar -WinSW .\\WinSW-x64.exe \`\n  -Url ${platformUrl} \`\n  -Token ${token.token}`
+    : `sudo ./deploy/linux/install-agent.sh \\\n  --jar netmon-agent.jar \\\n  --url ${platformUrl} \\\n  --token ${token.token}`;
+  const oneLine = installCmd.replace(/ (\\|`)\n\s+/g, ' ');
   const collectors = latest?.report?.collectors || [];
 
   return (
@@ -106,6 +110,12 @@ export default function AgentTab({ serverId, latest, canManage, onChanged }) {
             <ErrorAlert error={actionError} />
             {a.status === 'NOT_ENROLLED' && <p className="small text-body-secondary">{t('agent.notEnrolledText')}</p>}
             {a.status === 'REVOKED' && <p className="small text-body-secondary">{t('agent.revokedText')}</p>}
+            {a.platformMismatch && (
+              <div className="alert alert-warning small py-2">
+                <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
+                {t('agent.platformMismatch', { agent: t(`os.${a.platform}`), server: t(`os.${a.serverOsFamily}`) })}
+              </div>
+            )}
             {a.hostnameMismatch && (
               <div className="alert alert-warning small py-2">
                 <i className="bi bi-exclamation-triangle-fill me-1" aria-hidden="true" />
@@ -205,17 +215,15 @@ export default function AgentTab({ serverId, latest, canManage, onChanged }) {
               <div id="enroll-token" className="nm-code flex-grow-1">{token.token}</div>
               <CopyButton text={token.token} targetId="enroll-token" />
             </div>
-            <h3 className="h6">{t('agent.installTitle')}</h3>
+            <h3 className="h6">{t(`agent.${os}.installTitle`)}</h3>
             <ol className="small">
-              <li>{t('agent.step1')}</li>
-              <li>{t('agent.step2')}</li>
-              <li>{t('agent.step3')}</li>
+              {(windows ? [1, 2, 3, 4] : [1, 2, 3]).map((n) => <li key={n}>{t(`agent.${os}.step${n}`)}</li>)}
             </ol>
             <div className="d-flex gap-2 align-items-start">
               <div id="install-cmd" className="nm-code flex-grow-1">{installCmd}</div>
-              <CopyButton text={installCmd.replace(/\\\n\s+/g, '')} targetId="install-cmd" />
+              <CopyButton text={oneLine} targetId="install-cmd" />
             </div>
-            <p className="small text-body-secondary mt-2 mb-0">{t('agent.installNote')}</p>
+            <p className="small text-body-secondary mt-2 mb-0">{t(`agent.${os}.installNote`)}</p>
           </>
         )}
       </Modal>

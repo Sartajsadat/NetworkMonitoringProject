@@ -24,9 +24,32 @@ public record AgentSettings(
         int maxBufferedReports,
         Duration credentialRotation,
         boolean allowInsecureHttp,
-        int clockTicksPerSecond) {
+        int clockTicksPerSecond,
+        Path powershell) {
 
-    public static final Path DEFAULT_FILE = Path.of("/etc/netmon-agent/agent.properties");
+    static boolean isWindows() {
+        return System.getProperty("os.name", "").toLowerCase().contains("windows");
+    }
+
+    /** C:\ProgramData\NetMon\Agent on Windows. */
+    static Path windowsDataDir() {
+        String pd = System.getenv("ProgramData");
+        return Path.of(pd == null || pd.isBlank() ? "C:\\ProgramData" : pd, "NetMon", "Agent");
+    }
+
+    public static Path defaultFile() {
+        return isWindows() ? windowsDataDir().resolve("agent.properties") : Path.of("/etc/netmon-agent/agent.properties");
+    }
+
+    static String defaultStateDir() {
+        return isWindows() ? windowsDataDir().resolve("state").toString() : "/var/lib/netmon-agent";
+    }
+
+    static String defaultPowerShell() {
+        String root = System.getenv("SystemRoot");
+        return Path.of(root == null || root.isBlank() ? "C:\\Windows" : root,
+                "System32", "WindowsPowerShell", "v1.0", "powershell.exe").toString();
+    }
 
     public static AgentSettings load(Path file) throws IOException {
         Properties p = new Properties();
@@ -44,7 +67,7 @@ public record AgentSettings(
         return new AgentSettings(
                 url.isEmpty() ? null : URI.create(url.endsWith("/") ? url.substring(0, url.length() - 1) : url),
                 ca.isEmpty() ? null : Path.of(ca),
-                Path.of(p.getProperty("state.dir", "/var/lib/netmon-agent")),
+                Path.of(p.getProperty("state.dir", defaultStateDir())),
                 Path.of(p.getProperty("proc.root", "/proc")),
                 Path.of(p.getProperty("sys.root", "/sys")),
                 Path.of(p.getProperty("etc.root", "/etc")),
@@ -52,12 +75,13 @@ public record AgentSettings(
                 Integer.parseInt(p.getProperty("buffer.max-reports", "240")),
                 Duration.ofDays(Long.parseLong(p.getProperty("credentials.rotate-after-days", "30"))),
                 Boolean.parseBoolean(p.getProperty("tls.allow-insecure-http", "false")),
-                Integer.parseInt(p.getProperty("clock.ticks-per-second", "100")));
+                Integer.parseInt(p.getProperty("clock.ticks-per-second", "100")),
+                Path.of(p.getProperty("powershell.path", defaultPowerShell())));
     }
 
     public AgentSettings withPlatformUrl(URI url) {
         return new AgentSettings(url, caCertificate, stateDir, procRoot, sysRoot, etcRoot, systemctl, maxBufferedReports,
-                credentialRotation, allowInsecureHttp, clockTicksPerSecond);
+                credentialRotation, allowInsecureHttp, clockTicksPerSecond, powershell);
     }
 
     /** Plain HTTP is refused unless explicitly allowed or talking to this machine (development). */

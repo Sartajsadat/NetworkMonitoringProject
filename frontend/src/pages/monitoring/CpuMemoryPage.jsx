@@ -21,7 +21,9 @@ export default function CpuMemoryPage() {
                   <td><ServerCell entry={e} tab="metrics" /></td>
                   <td><UsageBar value={e.cpu?.usagePercent} /></td>
                   <td className="nm-num small">{units.percent(e.cpu?.iowaitPercent)}</td>
-                  <td className="nm-num small">{e.cpu ? `${units.decimal(e.cpu.load1)} · ${units.decimal(e.cpu.load5)} · ${units.decimal(e.cpu.load15)}` : '—'}</td>
+                  <td className="nm-num small">{e.cpu?.load1 != null
+                    ? `${units.decimal(e.cpu.load1)} · ${units.decimal(e.cpu.load5)} · ${units.decimal(e.cpu.load15)}`
+                    : e.cpu?.runQueue != null ? t('metric.queue', { n: units.decimal(e.cpu.runQueue, 0) }) : '—'}</td>
                   <td className="nm-num small">{e.host?.cpuCount ? formatNumber(e.host.cpuCount) : '—'}</td>
                   <td><UsageBar value={e.memory?.usedPercent} label={e.memory ? `${units.bytes(e.memory.usedBytes)} / ${units.bytes(e.memory.totalBytes)}` : null} /></td>
                   <td>{e.memory?.swapTotalBytes ? <UsageBar value={e.memory?.swapUsedPercent} /> : <span className="small text-body-secondary">{t('cpuMem.noSwap')}</span>}</td>

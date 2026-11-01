@@ -19,8 +19,11 @@ public final class AgentDtos {
     private AgentDtos() {
     }
 
-    /** systemd unit names: letters, digits and @ . _ : - ; e.g. nginx.service, postgresql@16-main.service */
-    public static final String UNIT_PATTERN = "^[A-Za-z0-9@._:-]{1,128}$";
+    /**
+     * Service names: systemd units on Linux (nginx.service, postgresql@16-main.service) and Windows
+     * service names (W3SVC, MSSQL$SQLEXPRESS). No spaces, quotes or separators.
+     */
+    public static final String UNIT_PATTERN = "^[A-Za-z0-9@._:$-]{1,128}$";
 
     public record EnrollmentTokenResponse(String token, Instant expiresAt, UUID serverId, String serverName,
             String platformUrl) {
@@ -36,7 +39,7 @@ public final class AgentDtos {
     public record ConfigRequest(
             @NotNull @Min(10) @Max(3600) Integer reportIntervalSeconds,
             @NotNull @Size(max = 50) List<@Pattern(regexp = UNIT_PATTERN,
-                    message = "must be a systemd unit name such as nginx.service") String> services) {
+                    message = "must be a service name such as nginx.service or W3SVC") String> services) {
     }
 
     /** status: ACTIVE, REVOKED or NOT_ENROLLED. */
@@ -56,6 +59,7 @@ public final class AgentDtos {
             String architecture,
             String reportedHostname,
             boolean hostnameMismatch,
+            boolean platformMismatch,
             Instant enrolledAt,
             String enrolledFromIp,
             Instant lastSeenAt,

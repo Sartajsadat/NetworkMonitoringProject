@@ -1,0 +1,14 @@
+# C:\ProgramData\NetMon\Agent\agent.properties  (written by install-agent.ps1; contains no secrets)
+# Use forward slashes in paths.
+
+platform.url=https://netmon.example.gov.af
+
+# PEM file of the ministry CA, if the platform certificate is not trusted by Java by default.
+tls.ca-certificate=C:/ProgramData/NetMon/Agent/ca.pem
+
+state.dir=C:/ProgramData/NetMon/Agent/state
+buffer.max-reports=240
+credentials.rotate-after-days=30
+
+# Windows PowerShell used for the read-only data query (default shown).
+powershell.path=C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe

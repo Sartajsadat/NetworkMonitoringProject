@@ -3,9 +3,10 @@
 Central platform for the Ministry of Telecommunication to monitor ministry-hosted servers,
 analyse network traffic, investigate incidents and (later) manage IP access rules.
 
-> **Status: Phase 2 of 9 done (Linux monitoring).** Authentication, users, server inventory,
-> audit log, English/Pashto/Dari UI, and a Linux monitoring agent with live and historical
-> CPU, memory, disk, network, service and process data work today.
+> **Status: Phase 3 of 9 done (Linux and Windows monitoring).** Authentication, users, server
+> inventory, audit log, English/Pashto/Dari UI, and monitoring agents for Linux and Windows with
+> live and historical CPU, memory, disk, network, service and process data. (The Windows agent still
+> needs its first test on a real Windows server: see docs/PHASE-3.md.)
 > Packet capture, alerts and firewall control arrive in later phases and are shown in the UI as
 > *not available yet* — never with placeholder numbers.
 
@@ -15,6 +16,8 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 | [docs/PHASE-1.md](docs/PHASE-1.md) | What Phase 1 delivered, how it works, how to verify it, limitations |
 | [docs/PHASE-2.md](docs/PHASE-2.md) | Linux monitoring agent, metrics storage, monitoring pages |
 | [docs/AGENT-INSTALL.md](docs/AGENT-INSTALL.md) | Installing, enrolling and operating the Linux agent |
+| [docs/PHASE-3.md](docs/PHASE-3.md) | Windows agent, and the Windows test checklist |
+| [docs/AGENT-INSTALL-WINDOWS.md](docs/AGENT-INSTALL-WINDOWS.md) | Installing the Windows agent as a service |
 | [docs/AGENT-PROTOCOL.md](docs/AGENT-PROTOCOL.md) | Agent ↔ platform API |
 | [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 
@@ -153,8 +156,9 @@ cd agent && ./mvnw test
 
 ## Monitoring agent
 
-Build it with `cd agent && ./mvnw package` (creates `agent/target/netmon-agent.jar`), then follow
-[docs/AGENT-INSTALL.md](docs/AGENT-INSTALL.md).
+Build it with `cd agent && ./mvnw package` (creates `agent/target/netmon-agent.jar`). The same jar
+runs on Linux and Windows. Follow [docs/AGENT-INSTALL.md](docs/AGENT-INSTALL.md) for Linux and
+[docs/AGENT-INSTALL-WINDOWS.md](docs/AGENT-INSTALL-WINDOWS.md) for Windows.
 
 ## Environment variables
 
@@ -184,7 +188,7 @@ All configuration comes from the environment; see [.env.example](.env.example).
 
 ```
 backend/    Spring Boot API (Maven)        frontend/   React + Vite UI
-agent/      Linux monitoring agent (Maven) deploy/     Agent install scripts and systemd unit
+agent/      Monitoring agent, Linux + Windows deploy/     Agent install scripts (Linux, Windows)
 docs/       Architecture, phase notes, guides
 docker-compose.yml, .env.example
 ```

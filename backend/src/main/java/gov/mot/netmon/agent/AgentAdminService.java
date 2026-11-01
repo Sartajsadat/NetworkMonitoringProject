@@ -109,6 +109,12 @@ public class AgentAdminService {
                 .map(EnrollmentToken::getExpiresAt).max(Comparator.naturalOrder()).orElse(null);
     }
 
+    /** The agent's operating system differs from the one the server was registered with. */
+    static boolean platformMismatch(Server s, Agent a) {
+        return a.getPlatform() != null && s.getOsFamily() != null && s.getOsFamily() != gov.mot.netmon.server.ServerEnums.OsFamily.OTHER
+                && !s.getOsFamily().name().equals(a.getPlatform());
+    }
+
     private ConfigView configView(ServerAgentConfig c) {
         return c == null ? new ConfigView(defaultInterval, List.of(), null, null)
                 : new ConfigView(c.getReportIntervalSeconds(), List.copyOf(c.getMonitoredServices()), c.getUpdatedAt(), c.getUpdatedBy());
@@ -118,13 +124,14 @@ public class AgentAdminService {
         var connection = s.connectionStatus(clock.instant(), onlineThreshold);
         if (a == null) {
             return new AgentView(s.getId(), s.getName(), s.getHostname(), s.getOsFamily(), null, "NOT_ENROLLED", connection,
-                    null, null, null, null, null, null, null, false, null, null, null, null, 0, null, null, null,
+                    null, null, null, null, null, null, null, false, false, null, null, null, null, 0, null, null, null,
                     pendingToken, configView(cfg));
         }
         return new AgentView(s.getId(), s.getName(), s.getHostname(), s.getOsFamily(), a.getId(), a.getStatus().name(),
                 connection, a.getAgentVersion(), a.getPlatform(), a.getOsName(), a.getOsVersion(), a.getKernel(),
                 a.getArchitecture(), a.getReportedHostname(),
                 AgentEnrollmentService.hostnameMismatch(s.getHostname(), a.getReportedHostname()),
+                platformMismatch(s, a),
                 a.getEnrolledAt(), a.getEnrolledFromIp(), a.getLastSeenAt(), a.getLastReportIp(), a.getLastErrorCount(),
                 a.getCredentialRotatedAt(), a.getRevokedAt(), a.getRevokedBy(), pendingToken, configView(cfg));
     }
