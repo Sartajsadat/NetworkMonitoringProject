@@ -64,6 +64,12 @@ export default function ServerDetailPage() {
         subtitle={<span className="nm-mono nm-ltr">{s.hostname}</span>}
         breadcrumbs={[{ label: t('servers.title'), to: '/servers' }, { label: s.name }]}
         actions={<>
+          <Link to={`/timeline?serverId=${id}`} className="btn btn-sm btn-outline-secondary">
+            <i className="bi bi-clock-history me-1" aria-hidden="true" />{t('nav.timeline')}
+          </Link>
+          <Link to={`/alerts?serverId=${id}`} className="btn btn-sm btn-outline-secondary">
+            <i className="bi bi-bell me-1" aria-hidden="true" />{t('nav.alerts')}
+          </Link>
           {canManage && (
             <Link to={`/servers/${id}/edit`} className="btn btn-sm btn-outline-primary">
               <i className="bi bi-pencil me-1" aria-hidden="true" />{t('common.edit')}

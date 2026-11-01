@@ -90,3 +90,25 @@ export const captureApi = {
   downloadTicket: (id) => api.post(`/captures/${id}/download-ticket`).then((r) => r.data),
   deleteFiles: (id, reason) => api.delete(`/captures/${id}/files`, { data: { reason } }).then((r) => r.data),
 };
+
+// Events and alerts (Phase 5)
+const multi = { paramsSerializer: { indexes: null } }; // category=A&category=B
+export const eventApi = {
+  search: (params) => api.get('/events', { params, ...multi }).then((r) => r.data),
+  histogram: (params) => api.get('/events/histogram', { params, ...multi }).then((r) => r.data),
+  get: (id) => api.get(`/events/${id}`).then((r) => r.data),
+  context: (id) => api.get(`/events/${id}/context`).then((r) => r.data),
+};
+
+export const alertApi = {
+  list: (params) => api.get('/alerts', { params }).then((r) => r.data),
+  counts: () => api.get('/alerts/counts').then((r) => r.data),
+  get: (id) => api.get(`/alerts/${id}`).then((r) => r.data),
+  acknowledge: (id, comment) => api.post(`/alerts/${id}/acknowledge`, { comment }).then((r) => r.data),
+  resolve: (id, comment) => api.post(`/alerts/${id}/resolve`, { comment }).then((r) => r.data),
+  rules: () => api.get('/alert-rules').then((r) => r.data),
+  ruleTypes: () => api.get('/alert-rules/types').then((r) => r.data),
+  createRule: (body) => api.post('/alert-rules', body).then((r) => r.data),
+  updateRule: (id, body) => api.put(`/alert-rules/${id}`, body).then((r) => r.data),
+  deleteRule: (id) => api.delete(`/alert-rules/${id}`),
+};

@@ -22,6 +22,11 @@ import AnalyzerPage from './pages/captures/AnalyzerPage.jsx';
 import CaptureDetailPage from './pages/captures/CaptureDetailPage.jsx';
 import CapturesPage from './pages/captures/CapturesPage.jsx';
 import NewCapturePage from './pages/captures/NewCapturePage.jsx';
+import TimelinePage from './pages/events/TimelinePage.jsx';
+import EventDetailPage from './pages/events/EventDetailPage.jsx';
+import AlertsPage from './pages/alerts/AlertsPage.jsx';
+import AlertDetailPage from './pages/alerts/AlertDetailPage.jsx';
+import AlertRulesPage from './pages/alerts/AlertRulesPage.jsx';
 
 export default function App() {
   return (
@@ -56,6 +61,11 @@ export default function App() {
         <Route path="captures/new" element={<ProtectedRoute roles={PERMISSIONS.manageCaptures}><NewCapturePage /></ProtectedRoute>} />
         <Route path="captures/:id" element={<ProtectedRoute roles={PERMISSIONS.viewCaptures}><CaptureDetailPage /></ProtectedRoute>} />
         <Route path="analyzer" element={<ProtectedRoute roles={PERMISSIONS.viewCaptures}><AnalyzerPage /></ProtectedRoute>} />
+        <Route path="timeline" element={<TimelinePage />} />
+        <Route path="events/:id" element={<EventDetailPage />} />
+        <Route path="alerts" element={<AlertsPage />} />
+        <Route path="alerts/rules" element={<AlertRulesPage />} />
+        <Route path="alerts/:id" element={<AlertDetailPage />} />
         <Route path="users" element={<ProtectedRoute roles={[ROLES.SUPER_ADMIN]}><UsersPage /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute roles={PERMISSIONS.viewAudit}><AuditLogPage /></ProtectedRoute>} />
         <Route path="account/password" element={<ChangePasswordPage />} />

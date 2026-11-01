@@ -21,6 +21,10 @@ export const PERMISSIONS = {
   viewCaptures: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
   manageCaptures: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN],
   deleteCaptureFiles: [ROLES.SUPER_ADMIN],
+  // Alerts: everyone sees them; operators acknowledge/resolve; administrators change the rules.
+  operateAlerts: [ROLES.SUPER_ADMIN, ROLES.INFRASTRUCTURE_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
+  manageAlertRules: [ROLES.SUPER_ADMIN, ROLES.INFRASTRUCTURE_ADMIN],
+  viewSecurityEvents: [ROLES.SUPER_ADMIN, ROLES.SECURITY_ANALYST],
 };
 
 export function hasAnyRole(user, roles) {

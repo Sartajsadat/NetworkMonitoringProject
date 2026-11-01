@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { dashboardApi } from '../api/endpoints.js';
+import { dashboardApi, eventApi } from '../api/endpoints.js';
+import SeverityBadge from '../components/SeverityBadge.jsx';
+import { eventSummary, eventTitle } from './events/eventText.js';
 import { useApi } from '../api/useApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { PERMISSIONS } from '../auth/roles.js';
@@ -63,10 +65,13 @@ function FleetTile({ label, value, hint, icon }) {
 }
 
 export default function DashboardPage() {
-  const { t, units, formatNumber } = useI18n();
+  const i18n = useI18n();
+  const { t, units, formatNumber } = i18n;
   const { can } = useAuth();
   const [refreshSeconds, setRefreshSeconds] = useState(60);
   const { data, error, loading, reload } = useApi(() => dashboardApi.summary(), []);
+  const recent = useApi(() => eventApi.search({ size: 8, minSeverity: 'WARNING',
+    from: new Date(Date.now() - 7 * 86400000).toISOString() }), [data]);
 
   useEffect(() => {
     if (!refreshSeconds) return undefined;
@@ -106,7 +111,13 @@ export default function DashboardPage() {
             <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.online')} value={data.connection.ONLINE} icon="check-circle" hint={t('dashboard.tile.onlineHint')} /></div>
             <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.offline')} value={data.connection.OFFLINE} icon="x-octagon" hint={t('dashboard.tile.offlineHint')} /></div>
             <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.noAgent')} value={data.connection.NO_AGENT} icon="dash-circle" hint={t('dashboard.tile.noAgentHint')} /></div>
-            <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.groups')} value={data.serverGroups} icon="collection" /></div>
+            <div className="col-6 col-md-4 col-xl">
+              <Link to="/alerts" className="text-reset text-decoration-none d-block h-100">
+                <StatTile label={t('dashboard.tile.activeAlerts')} value={(data.alerts?.open ?? 0) + (data.alerts?.acknowledged ?? 0)} icon="bell"
+                  hint={data.alerts && (data.alerts.critical + data.alerts.error) > 0
+                    ? t('dashboard.tile.alertsHint', { n: formatNumber(data.alerts.critical + data.alerts.error) }) : null} />
+              </Link>
+            </div>
             <div className="col-6 col-md-4 col-xl"><StatTile label={t('dashboard.tile.users')} value={data.activeUsers} icon="people" /></div>
             {can(PERMISSIONS.viewCaptures) && (
               <div className="col-6 col-md-4 col-xl">
@@ -178,6 +189,29 @@ export default function DashboardPage() {
                   ))}
                 </ul>
                 <div className="card-footer small text-body-secondary">{t('dashboard.modulesFooter')}</div>
+              </div>
+            </div>
+            <div className="col-lg-6">
+              <div className="card h-100">
+                <div className="card-header d-flex justify-content-between">
+                  <h2 className="h6 mb-0">{t('dashboard.recentEvents')}</h2>
+                  <Link to="/timeline?range=7d&minSeverity=WARNING" className="small">{t('dashboard.timelineLink')}</Link>
+                </div>
+                {recent.data && recent.data.content.length === 0 && <div className="card-body small text-body-secondary">{t('dashboard.noEvents')}</div>}
+                {recent.data && recent.data.content.length > 0 && (
+                  <ul className="list-group list-group-flush">
+                    {recent.data.content.map((e) => (
+                      <li key={e.id} className="list-group-item">
+                        <div className="d-flex justify-content-between gap-2 align-items-center flex-wrap">
+                          <span className="d-flex gap-2 align-items-center"><SeverityBadge severity={e.severity} />
+                            <Link to={`/events/${e.id}`} className="small fw-semibold">{eventTitle(e, t)}</Link></span>
+                          <small className="text-body-secondary"><TimeAgo value={e.occurredAt} /></small>
+                        </div>
+                        <div className="small text-body-secondary">{e.serverName && <>{e.serverName} · </>}{eventSummary(e, i18n)}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
             {data.recentSecurityEvents && (

@@ -16,7 +16,7 @@ export const NAV_SECTIONS = [
       { to: '/monitoring/interfaces', label: 'nav.interfaces', icon: 'ethernet' },
       { to: '/monitoring/services', label: 'nav.processes', icon: 'list-task' },
       { to: '/agents', label: 'nav.agents', icon: 'broadcast' },
-      { label: 'nav.applications', icon: 'window-stack', phase: 5 },
+      { label: 'nav.applications', icon: 'window-stack', phase: '5b' },
     ],
   },
   {
@@ -41,9 +41,9 @@ export const NAV_SECTIONS = [
   {
     title: 'nav.section.investigation',
     items: [
-      { label: 'nav.timeline', icon: 'clock-history', phase: 5 },
-      { label: 'nav.logs', icon: 'journal-text', phase: 5 },
-      { label: 'nav.alerts', icon: 'bell', phase: 5 },
+      { to: '/timeline', label: 'nav.timeline', icon: 'clock-history' },
+      { to: '/alerts', label: 'nav.alerts', icon: 'bell' },
+      { label: 'nav.logs', icon: 'journal-text', phase: '5b' },
       { to: '/audit-logs', label: 'nav.audit', icon: 'shield-check', roles: PERMISSIONS.viewAudit },
     ],
   },

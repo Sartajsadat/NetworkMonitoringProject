@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { alertApi } from '../api/endpoints.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { useI18n } from '../i18n/I18nContext.jsx';
 import LanguageSwitcher from '../i18n/LanguageSwitcher.jsx';
@@ -11,6 +12,17 @@ export default function TopBar({ onToggleSidebar }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
+  const [alerts, setAlerts] = useState(null);
+
+  // Active alert count in the band; refreshed every minute.
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => alertApi.counts().then((c) => !cancelled && setAlerts(c)).catch(() => {});
+    load();
+    const timer = setInterval(load, 60000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, []);
+  const active = alerts ? alerts.open + alerts.acknowledged : 0;
 
   useEffect(() => {
     if (!menuOpen) return undefined;
@@ -37,6 +49,15 @@ export default function TopBar({ onToggleSidebar }) {
         <small>{t('app.platform')}</small>
       </div>
       <div className="ms-auto d-flex align-items-center gap-2">
+        <Link to="/alerts" className="btn btn-sm btn-band position-relative" aria-label={t('topbar.alerts', { n: active })}
+          title={t('topbar.alerts', { n: active })}>
+          <i className={`bi ${active ? 'bi-bell-fill' : 'bi-bell'}`} aria-hidden="true" />
+          {alerts && alerts.open > 0 && (
+            <span className={`position-absolute top-0 start-100 translate-middle badge rounded-pill ${alerts.critical + alerts.error > 0 ? 'text-bg-danger' : 'text-bg-warning'}`}>
+              {alerts.open}
+            </span>
+          )}
+        </Link>
         <LanguageSwitcher variant="onDark" className="d-none d-sm-inline-flex" />
         <div className="position-relative" ref={menuRef}>
           <button type="button" className="btn btn-sm btn-band d-flex align-items-center gap-2"

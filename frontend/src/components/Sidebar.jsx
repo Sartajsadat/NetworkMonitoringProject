@@ -21,10 +21,10 @@ export default function Sidebar({ open, onNavigate }) {
             {items.map((item) =>
               item.phase ? (
                 <span key={item.label} className="nm-link disabled" aria-disabled="true"
-                  title={t('nav.notAvailable', { n: formatNumber(item.phase) })}>
+                  title={t('nav.notAvailable', { n: typeof item.phase === 'number' ? formatNumber(item.phase) : item.phase })}>
                   <i className={`bi bi-${item.icon}`} aria-hidden="true" />
                   {t(item.label)}
-                  <span className="nm-phase">{t('nav.phase', { n: formatNumber(item.phase) })}</span>
+                  <span className="nm-phase">{t('nav.phase', { n: typeof item.phase === 'number' ? formatNumber(item.phase) : item.phase })}</span>
                 </span>
               ) : (
                 <NavLink key={item.to} to={item.to} end={item.end} className="nm-link" onClick={onNavigate}>
