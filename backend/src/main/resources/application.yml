@@ -88,3 +88,16 @@ app:
     default-report-interval: ${AGENT_DEFAULT_REPORT_INTERVAL:30}
     # Address agents use to reach this platform, e.g. https://netmon.mot.gov.af (used in install commands).
     public-url: ${AGENT_PUBLIC_URL:}
+  capture:
+    storage-dir: ${CAPTURE_STORAGE_DIR:/var/lib/netmon/captures}
+    quota-bytes: ${CAPTURE_STORAGE_QUOTA_BYTES:10737418240}
+    min-free-disk-bytes: ${CAPTURE_MIN_FREE_DISK_BYTES:1073741824}
+    max-duration-seconds: ${CAPTURE_MAX_DURATION_SECONDS:3600}
+    max-bytes-per-capture: ${CAPTURE_MAX_BYTES:1073741824}
+    default-snaplen: ${CAPTURE_DEFAULT_SNAPLEN:256}
+    default-retention-days: ${CAPTURE_DEFAULT_RETENTION_DAYS:7}
+    max-retention-days: ${CAPTURE_MAX_RETENTION_DAYS:90}
+    max-indexed-packets: ${CAPTURE_MAX_INDEXED_PACKETS:500000}
+    tshark-path: ${TSHARK_PATH:/usr/bin/tshark}
+    tshark-timeout: ${TSHARK_TIMEOUT:PT2M}
+    pending-timeout: ${CAPTURE_PENDING_TIMEOUT:PT5M}

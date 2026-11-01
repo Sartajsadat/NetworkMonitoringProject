@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /** Strongly typed view of the {@code app.*} configuration (all values come from the environment). */
 @ConfigurationProperties(prefix = "app")
-public record AppProperties(Security security, Bootstrap bootstrap, Monitoring monitoring, Agents agents) {
+public record AppProperties(Security security, Bootstrap bootstrap, Monitoring monitoring, Agents agents, Capture capture) {
 
     public record Security(
             String jwtSecret,
@@ -40,5 +40,25 @@ public record AppProperties(Security security, Bootstrap bootstrap, Monitoring m
      */
     public record Agents(Duration enrollmentTokenTtl, Duration credentialGracePeriod, int defaultReportInterval,
             String publicUrl) {
+    }
+
+    /**
+     * Packet capture limits and storage.
+     *
+     * @param storageDir         folder for PCAPNG files (readable only by the backend)
+     * @param quotaBytes         total size of all stored capture files
+     * @param minFreeDiskBytes   uploads are refused when the disk has less free space than this
+     * @param maxDurationSeconds longest capture that can be requested
+     * @param maxBytesPerCapture largest capture that can be requested
+     * @param defaultSnaplen     bytes kept per packet unless the requester asks for more (headers only)
+     * @param defaultRetentionDays / maxRetentionDays  how long files and packet metadata are kept
+     * @param maxIndexedPackets  packets per capture whose metadata is stored for the packet table
+     * @param tsharkPath         TShark executable (fixed path, never from user input)
+     * @param tsharkTimeout      limit for one TShark run
+     * @param pendingTimeout     a capture the agent has not picked up within this time fails
+     */
+    public record Capture(String storageDir, long quotaBytes, long minFreeDiskBytes, int maxDurationSeconds,
+            long maxBytesPerCapture, int defaultSnaplen, int defaultRetentionDays, int maxRetentionDays,
+            long maxIndexedPackets, String tsharkPath, Duration tsharkTimeout, Duration pendingTimeout) {
     }
 }

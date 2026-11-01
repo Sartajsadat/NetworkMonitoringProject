@@ -57,7 +57,7 @@ public abstract class IntegrationTest {
     @BeforeEach
     void cleanDatabase() {
         // audit_logs is append-only by design and is intentionally not cleaned.
-        jdbc.execute("TRUNCATE metric_rollups_5m, metric_samples, server_snapshots, server_agent_configs, "
+        jdbc.execute("TRUNCATE packet_summaries, capture_segments, agent_tasks, packet_captures, metric_rollups_5m, metric_samples, server_snapshots, server_agent_configs, "
                 + "agent_enrollment_tokens, agents, server_group_members, server_ip_addresses, servers, server_groups, "
                 + "refresh_tokens, user_roles, users, system_settings");
         loginRateLimiter.reset();

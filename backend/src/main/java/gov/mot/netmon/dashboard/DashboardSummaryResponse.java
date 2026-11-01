@@ -21,6 +21,7 @@ public record DashboardSummaryResponse(
         long activeUsers,
         List<ModuleStatus> modules,
         Fleet fleet,
+        long activeCaptures,
         List<AuditLogResponse> recentSecurityEvents) {
 
     /**

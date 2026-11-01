@@ -8,10 +8,18 @@ RUN mvn -B -q package -DskipTests
 
 # ---- runtime stage ----
 FROM eclipse-temurin:21-jre
-RUN groupadd --system netmon && useradd --system --gid netmon --home /app --shell /usr/sbin/nologin netmon
+# TShark analyses uploaded capture files (read-only: it never captures inside this container).
+# "wireshark-common/install-setuid false" keeps dumpcap without setuid root.
+RUN echo "wireshark-common wireshark-common/install-setuid boolean false" | debconf-set-selections \
+ && apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tshark \
+ && rm -rf /var/lib/apt/lists/*
+RUN groupadd --system netmon && useradd --system --gid netmon --home /app --shell /usr/sbin/nologin netmon \
+ && mkdir -p /var/lib/netmon/captures && chown netmon:netmon /var/lib/netmon/captures && chmod 700 /var/lib/netmon/captures
 WORKDIR /app
 COPY --from=build /src/target/netmon-backend-*.jar /app/app.jar
-# The backend never needs root: packet capture and firewall changes run in separate agents (later phases).
+# The backend never needs root: packet capture runs in the agents on monitored servers;
+# firewall changes (later phases) run in a separate agent.
 USER netmon
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \

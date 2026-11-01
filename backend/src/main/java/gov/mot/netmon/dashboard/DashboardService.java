@@ -40,12 +40,15 @@ public class DashboardService {
     private final UserRepository users;
     private final AuditLogRepository auditLogs;
     private final SnapshotStore snapshots;
+    private final gov.mot.netmon.capture.PacketCaptureRepository captures;
     private final Clock clock;
     private final Duration onlineThreshold;
 
     public DashboardService(ServerRepository servers, ServerGroupRepository groups, UserRepository users,
-            AuditLogRepository auditLogs, SnapshotStore snapshots, Clock clock, AppProperties props) {
+            AuditLogRepository auditLogs, SnapshotStore snapshots, gov.mot.netmon.capture.PacketCaptureRepository captures,
+            Clock clock, AppProperties props) {
         this.snapshots = snapshots;
+        this.captures = captures;
         this.servers = servers;
         this.groups = groups;
         this.users = users;
@@ -86,8 +89,12 @@ public class DashboardService {
         }
 
         Fleet fleet = fleet(all, now);
+        var snaps = snapshots.findAll();
+        long captureServers = snaps.values().stream().filter(sn -> sn.report().capture() != null
+                && sn.report().capture().enabled() && sn.report().capture().available()).count();
+        long active = captures.countByStatusIn(gov.mot.netmon.capture.CaptureStatus.ACTIVE);
         return new DashboardSummaryResponse(now, all.size(), connectionOut, byStatus, byOs, byEnv, groups.count(),
-                activeUsers, modules(fleet.reportingServers()), fleet, security);
+                activeUsers, modules(fleet.reportingServers(), captureServers), fleet, active, security);
     }
 
     private Fleet fleet(List<Server> all, Instant now) {
@@ -125,7 +132,7 @@ public class DashboardService {
     }
 
     /** Honest status of each telemetry module in this release. Updated as phases are delivered. */
-    private static List<ModuleStatus> modules(int reportingServers) {
+    private static List<ModuleStatus> modules(int reportingServers, long captureServers) {
         ModuleStatus metrics = reportingServers > 0
                 ? new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.AVAILABLE,
                         reportingServers + " server(s) reporting live data.")
@@ -133,8 +140,11 @@ public class DashboardService {
                         "No agent is reporting. Enroll a Linux or Windows agent from a server's page (Agent tab).");
         return List.of(
                 metrics,
-                new ModuleStatus("capture", "Packet capture", Availability.NOT_CONFIGURED,
-                        "Packet capture integration (dumpcap/TShark) arrives in Phase 4."),
+                captureServers > 0
+                        ? new ModuleStatus("capture", "Packet capture", Availability.AVAILABLE,
+                                captureServers + " server(s) can capture packets.")
+                        : new ModuleStatus("capture", "Packet capture", Availability.NOT_CONFIGURED,
+                                "No server has packet capture enabled in its agent configuration."),
                 new ModuleStatus("alerts", "Alerts and event timeline", Availability.NOT_CONFIGURED,
                         "Alert rules and event correlation arrive in Phase 5."),
                 new ModuleStatus("firewall", "Firewall integrations", Availability.NOT_CONFIGURED,

@@ -95,7 +95,27 @@ public final class AgentProtocol {
             @Size(max = 64) List<@Valid NetworkInterface> network,
             @Size(max = 100) List<@Valid Service> services,
             @Size(max = 30) List<@Valid ProcessInfo> processes,
-            @Size(max = 30) List<@Valid CollectorStatus> collectors) {
+            @Size(max = 30) List<@Valid CollectorStatus> collectors,
+            @Valid Capture capture) {
+    }
+
+    /**
+     * Packet-capture capability of the agent (phase 4). Capture is off unless the server operator
+     * enabled it locally and listed the interfaces that may be captured.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Capture(
+            boolean enabled,
+            boolean available,
+            @Size(max = 300) String message,
+            @Size(max = 64) List<@Valid CaptureInterface> interfaces,
+            @PositiveOrZero Integer maxDurationSeconds,
+            @PositiveOrZero Long maxBytes,
+            @Size(max = 80) String dumpcapVersion) {
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CaptureInterface(@NotBlank @Pattern(regexp = RESOURCE_PATTERN) String name, @Size(max = 200) String description) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

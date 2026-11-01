@@ -44,7 +44,15 @@ services:
       METRICS_RAW_RETENTION: ${METRICS_RAW_RETENTION:-P7D}
       METRICS_ROLLUP_RETENTION: ${METRICS_ROLLUP_RETENTION:-P90D}
       LOG_FORMAT: ${LOG_FORMAT:-}
+      CAPTURE_STORAGE_QUOTA_BYTES: ${CAPTURE_STORAGE_QUOTA_BYTES:-10737418240}
+      CAPTURE_MAX_DURATION_SECONDS: ${CAPTURE_MAX_DURATION_SECONDS:-3600}
+      CAPTURE_MAX_BYTES: ${CAPTURE_MAX_BYTES:-1073741824}
+      CAPTURE_DEFAULT_RETENTION_DAYS: ${CAPTURE_DEFAULT_RETENTION_DAYS:-7}
+      CAPTURE_MAX_RETENTION_DAYS: ${CAPTURE_MAX_RETENTION_DAYS:-90}
       TZ: UTC
+    volumes:
+      # Packet capture files (PCAPNG). Size is limited by CAPTURE_STORAGE_QUOTA_BYTES.
+      - capture-data:/var/lib/netmon/captures
     # No host port: reached only through the frontend's reverse proxy.
 
   frontend:
@@ -57,3 +65,4 @@ services:
 
 volumes:
   db-data:
+  capture-data:
