@@ -12,3 +12,13 @@ credentials.rotate-after-days=30
 
 # Windows PowerShell used for the read-only data query (default shown).
 powershell.path=C:/Windows/System32/WindowsPowerShell/v1.0/powershell.exe
+
+# --- Packet capture (Phase 4). OFF unless enabled here (install-agent.ps1 -EnableCapture). ---
+# Needs Wireshark (dumpcap.exe) and Npcap. Interfaces may be given by name or by the
+# description shown by dumpcap -D, e.g. Ethernet0. Empty = every real interface.
+capture.enabled=false
+capture.interfaces=
+capture.max-duration-seconds=3600
+capture.max-megabytes=1024
+capture.dumpcap-path=C:/Program Files/Wireshark/dumpcap.exe
+capture.min-free-disk-megabytes=512

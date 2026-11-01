@@ -25,7 +25,8 @@ public record AgentSettings(
         Duration credentialRotation,
         boolean allowInsecureHttp,
         int clockTicksPerSecond,
-        Path powershell) {
+        Path powershell,
+        gov.mot.netmon.agent.capture.CaptureSettings capture) {
 
     static boolean isWindows() {
         return System.getProperty("os.name", "").toLowerCase().contains("windows");
@@ -64,10 +65,11 @@ public record AgentSettings(
     public static AgentSettings fromProperties(Properties p) {
         String url = p.getProperty("platform.url", "").trim();
         String ca = p.getProperty("tls.ca-certificate", "").trim();
+        Path stateDir = Path.of(p.getProperty("state.dir", defaultStateDir()));
         return new AgentSettings(
                 url.isEmpty() ? null : URI.create(url.endsWith("/") ? url.substring(0, url.length() - 1) : url),
                 ca.isEmpty() ? null : Path.of(ca),
-                Path.of(p.getProperty("state.dir", defaultStateDir())),
+                stateDir,
                 Path.of(p.getProperty("proc.root", "/proc")),
                 Path.of(p.getProperty("sys.root", "/sys")),
                 Path.of(p.getProperty("etc.root", "/etc")),
@@ -76,12 +78,13 @@ public record AgentSettings(
                 Duration.ofDays(Long.parseLong(p.getProperty("credentials.rotate-after-days", "30"))),
                 Boolean.parseBoolean(p.getProperty("tls.allow-insecure-http", "false")),
                 Integer.parseInt(p.getProperty("clock.ticks-per-second", "100")),
-                Path.of(p.getProperty("powershell.path", defaultPowerShell())));
+                Path.of(p.getProperty("powershell.path", defaultPowerShell())),
+                gov.mot.netmon.agent.capture.CaptureSettings.fromProperties(p, stateDir, isWindows()));
     }
 
     public AgentSettings withPlatformUrl(URI url) {
         return new AgentSettings(url, caCertificate, stateDir, procRoot, sysRoot, etcRoot, systemctl, maxBufferedReports,
-                credentialRotation, allowInsecureHttp, clockTicksPerSecond, powershell);
+                credentialRotation, allowInsecureHttp, clockTicksPerSecond, powershell, capture);
     }
 
     /** Plain HTTP is refused unless explicitly allowed or talking to this machine (development). */

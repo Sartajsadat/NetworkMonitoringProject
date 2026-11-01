@@ -38,7 +38,8 @@ public class AgentRunner {
     private final ReportBuffer buffer;
     private final AtomicReference<AgentConfig> config = new AtomicReference<>(AgentConfig.defaults());
     private final CollectorRunner collectors;
-    private Credentials credentials;
+    private volatile Credentials credentials;
+    private volatile java.util.function.Supplier<Report.Capture> captureStatus = () -> null;
     private volatile boolean running = true;
     private volatile boolean revoked;
 
@@ -64,6 +65,21 @@ public class AgentRunner {
 
     public void setConfig(AgentConfig c) {
         config.set(c.sanitized());
+    }
+
+    /** Current "Authorization" header (follows credential rotation). */
+    public String authorization() {
+        return credentials.authorizationHeader();
+    }
+
+    public void setCaptureStatus(java.util.function.Supplier<Report.Capture> s) {
+        this.captureStatus = s;
+    }
+
+    private Report build(Instant now) {
+        var b = collectors.run(now);
+        b.capture = captureStatus.get();
+        return b.build(AgentInfo.VERSION, now, config.get().reportIntervalSeconds());
     }
 
     public ReportBuffer buffer() {
@@ -129,7 +145,7 @@ public class AgentRunner {
 
     void collect() {
         Instant now = clock.instant();
-        buffer.add(collectors.run(now).build(AgentInfo.VERSION, now, config.get().reportIntervalSeconds()));
+        buffer.add(build(now));
     }
 
     /** One collection + delivery cycle. Package-visible for tests. */
@@ -175,8 +191,7 @@ public class AgentRunner {
         } catch (Exception e) {
             return false;
         }
-        PlatformClient.Response res = client.post("/api/v1/agent/report",
-                collectors.run(clock.instant()).build(AgentInfo.VERSION, clock.instant(), config.get().reportIntervalSeconds()),
+        PlatformClient.Response res = client.post("/api/v1/agent/report", build(clock.instant()),
                 credentials.authorizationHeader());
         return res.outcome() == Outcome.OK;
     }

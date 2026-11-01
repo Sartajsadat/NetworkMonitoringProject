@@ -6,7 +6,8 @@
   Run in an elevated Windows PowerShell 5.1 (or PowerShell 7) window:
 
     .\install-agent.ps1 -Jar .\netmon-agent.jar -WinSW .\WinSW-x64.exe `
-        -Url https://netmon.example.gov.af -Token <ENROLLMENT_TOKEN> [-CaFile .\ministry-ca.pem]
+        -Url https://netmon.example.gov.af -Token <ENROLLMENT_TOKEN> [-CaFile .\ministry-ca.pem] `
+        [-EnableCapture [-CaptureInterfaces "Ethernet0"]]
 
   What it does:
     1. Copies the agent to "C:\Program Files\NetMon Agent" and uses WinSW (open-source service wrapper,
@@ -17,6 +18,11 @@
     5. Runs the service as NT AUTHORITY\LocalService (not LocalSystem, not an administrator) and adds
        that account to "Performance Monitor Users" so it can read performance counters.
   No inbound firewall port is opened: the agent only connects out to the platform.
+
+  Packet capture (Phase 4) is OFF unless -EnableCapture is given. It needs Wireshark's dumpcap.exe
+  and the Npcap driver installed WITHOUT "Restrict Npcap driver's access to Administrators only"
+  (otherwise LocalService cannot capture). -CaptureInterfaces limits capture to the listed adapters
+  (names as shown by dumpcap -D in brackets, e.g. Ethernet0); empty = every real adapter.
 #>
 [CmdletBinding()]
 param(
@@ -27,7 +33,11 @@ param(
     [string] $CaFile,
     [string] $JavaPath,
     [switch] $SkipPerformanceGroup,
-    [switch] $SkipWinSWHashCheck
+    [switch] $SkipWinSWHashCheck,
+    [switch] $EnableCapture,
+    [string] $CaptureInterfaces = '',
+    [ValidateRange(1, 1440)] [int] $CaptureMaxMinutes = 60,
+    [ValidateRange(1, 102400)] [int] $CaptureMaxMegabytes = 1024
 )
 
 $ErrorActionPreference = 'Stop'
@@ -115,6 +125,28 @@ if (-not (Test-Path -LiteralPath $ConfigFile)) {
     Set-Content -LiteralPath $ConfigFile -Value $props -Encoding Ascii
 } else {
     Step "Keeping existing $ConfigFile"
+}
+
+if ($EnableCapture) {
+    Step 'Enabling packet capture'
+    if ($CaptureInterfaces -notmatch '^[A-Za-z0-9 ._:@,()-]*$') { throw "Invalid -CaptureInterfaces value" }
+    $dumpcap = Join-Path $env:ProgramFiles 'Wireshark\dumpcap.exe'
+    if (-not (Test-Path -LiteralPath $dumpcap)) {
+        Write-Warning "dumpcap.exe not found at $dumpcap. Install Wireshark (with Npcap) before capturing."
+    }
+    if (-not (Get-Service -Name npcap -ErrorAction SilentlyContinue)) {
+        Write-Warning 'The Npcap driver is not installed. Install it from https://npcap.com (do not restrict it to Administrators).'
+    }
+    $captureProps = [ordered]@{
+        'capture.enabled'              = 'true'
+        'capture.interfaces'           = $CaptureInterfaces
+        'capture.max-duration-seconds' = [string]($CaptureMaxMinutes * 60)
+        'capture.max-megabytes'        = [string]$CaptureMaxMegabytes
+        'capture.dumpcap-path'         = $dumpcap.Replace('\', '/')
+    }
+    $lines = @(Get-Content -LiteralPath $ConfigFile | Where-Object { $_ -notmatch '^capture\.(enabled|interfaces|max-duration-seconds|max-megabytes|dumpcap-path)=' })
+    foreach ($k in $captureProps.Keys) { $lines += "$k=$($captureProps[$k])" }
+    Set-Content -LiteralPath $ConfigFile -Value $lines -Encoding Ascii
 }
 
 # --- enrollment ----------------------------------------------------------------

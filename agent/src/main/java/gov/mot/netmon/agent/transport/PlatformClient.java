@@ -51,9 +51,30 @@ public class PlatformClient {
             HttpRequest.Builder req = HttpRequest.newBuilder(base.resolve(path))
                     .timeout(Duration.ofSeconds(15))
                     .header("Content-Type", "application/json")
-                    .header("User-Agent", "netmon-agent")
                     .POST(body == null ? HttpRequest.BodyPublishers.noBody()
                             : HttpRequest.BodyPublishers.ofByteArray(Json.MAPPER.writeValueAsBytes(body)));
+            return send(req, authorization);
+        } catch (IOException e) {
+            return new Response(Outcome.RETRY_LATER, 0, null, null, e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+
+    /** Uploads a file as the raw request body (used for packet capture pieces). */
+    public Response putFile(String path, Path file, String authorization) {
+        try {
+            HttpRequest.Builder req = HttpRequest.newBuilder(base.resolve(path))
+                    .timeout(Duration.ofMinutes(5))
+                    .header("Content-Type", "application/octet-stream")
+                    .PUT(HttpRequest.BodyPublishers.ofFile(file));
+            return send(req, authorization);
+        } catch (IOException e) {
+            return new Response(Outcome.RETRY_LATER, 0, null, null, e.getClass().getSimpleName() + ": " + e.getMessage());
+        }
+    }
+
+    private Response send(HttpRequest.Builder req, String authorization) {
+        try {
+            req.header("User-Agent", "netmon-agent");
             if (authorization != null) {
                 req.header("Authorization", authorization);
             }

@@ -15,6 +15,8 @@ import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+import gov.mot.netmon.agent.capture.CaptureManager;
+import gov.mot.netmon.agent.capture.Dumpcap;
 import gov.mot.netmon.agent.collect.CollectorRunner;
 import gov.mot.netmon.agent.config.AgentSettings;
 import gov.mot.netmon.agent.config.CredentialStore;
@@ -30,6 +32,7 @@ import gov.mot.netmon.agent.transport.PlatformClient;
  *   netmon-agent enroll --token TOKEN [--url https://netmon.example] [--config FILE]
  *   netmon-agent run    [--config FILE]
  *   netmon-agent collect-once [--config FILE]     (prints one report locally, sends nothing)
+ *   netmon-agent capture-check [--config FILE]    (shows whether packet capture can work here)
  *   netmon-agent version
  * </pre>
  */
@@ -63,6 +66,7 @@ public final class AgentMain {
             case "enroll" -> enroll(platform, settings, opts.get("token"));
             case "run" -> run(platform, settings);
             case "collect-once" -> collectOnce(platform, settings);
+            case "capture-check" -> captureCheck(settings);
             default -> {
                 usage();
                 System.exit(2);
@@ -116,7 +120,22 @@ public final class AgentMain {
                 () -> holder[0] == null ? List.of() : holder[0].monitoredServices()));
         AgentRunner runner = new AgentRunner(settings, store, creds, client, collectors, Clock.systemUTC());
         holder[0] = runner;
-        Runtime.getRuntime().addShutdownHook(new Thread(runner::stop));
+        CaptureManager capture = new CaptureManager(settings.capture(), new Dumpcap(settings.capture().dumpcap()), client,
+                runner::authorization, Clock.systemUTC());
+        runner.setCaptureStatus(capture::capability);
+        if (capture.enabled()) {
+            Thread t = new Thread(capture::runForever, "netmon-capture");
+            t.setDaemon(true);
+            t.start();
+            Report.Capture c = capture.capability();
+            Logger.getLogger(AgentMain.class.getName()).info("Packet capture enabled: "
+                    + (c.available() ? "interfaces " + c.interfaces().stream().map(Report.CaptureInterface::name).toList()
+                            : "NOT available - " + c.message()));
+        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            runner.stop();
+            capture.stop();
+        }));
         runner.runForever();
     }
 
@@ -127,6 +146,13 @@ public final class AgentMain {
         Instant now = Instant.now();
         Report r = collectors.run(now).build(AgentInfo.VERSION, now, AgentConfig.defaults().reportIntervalSeconds());
         System.out.println(Json.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(r));
+    }
+
+    private static void captureCheck(AgentSettings settings) throws Exception {
+        CaptureManager m = new CaptureManager(settings.capture(), new Dumpcap(settings.capture().dumpcap()), null, () -> null,
+                Clock.systemUTC());
+        System.out.println(Json.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(m.capability()));
+        if (!m.capability().available()) System.exit(1);
     }
 
     static Map<String, String> options(String[] argv) {
@@ -145,6 +171,7 @@ public final class AgentMain {
                   netmon-agent enroll --token TOKEN [--url https://netmon.example] [--config FILE]
                   netmon-agent run [--config FILE]
                   netmon-agent collect-once [--config FILE]
+                  netmon-agent capture-check [--config FILE]
                   netmon-agent version""");
     }
 

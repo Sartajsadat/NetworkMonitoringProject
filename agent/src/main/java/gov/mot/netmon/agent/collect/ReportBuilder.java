@@ -24,8 +24,11 @@ public class ReportBuilder {
     /** Raw platform data shared by several collectors in one cycle (Windows: one PowerShell query). */
     public com.fasterxml.jackson.databind.JsonNode platformData;
 
+    /** Capture capability, set by the runner (not by a collector). */
+    public Report.Capture capture;
+
     public Report build(String agentVersion, Instant collectedAt, int intervalSeconds) {
         return new Report(agentVersion, collectedAt, intervalSeconds, host, cpu, memory, disks, diskIo, network, services,
-                processes, List.copyOf(collectors));
+                processes, List.copyOf(collectors), capture);
     }
 }

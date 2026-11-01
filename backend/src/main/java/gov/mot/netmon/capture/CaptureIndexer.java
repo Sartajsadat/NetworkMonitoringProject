@@ -59,8 +59,20 @@ public class CaptureIndexer {
         });
     }
 
-    /** Synchronous variant (used by tests). Indexes all pending segments that are next in order. */
-    public void indexPending(UUID captureId) {
+    /** Waits until queued indexing work is done (tests, shutdown). */
+    public void awaitIdle() {
+        try {
+            executor.submit(() -> { }).get(60, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warn("Indexer did not become idle: {}", e.toString());
+        }
+    }
+
+    /**
+     * Indexes all pending segments that are next in order. Runs one pass at a time, so a piece is
+     * never indexed twice even if this is also called directly (tests).
+     */
+    public synchronized void indexPending(UUID captureId) {
         long nextFrame = 1;
         int expectedSeq = 1;
         for (CaptureSegment seg : segments.findByCaptureIdOrderBySeq(captureId)) {
@@ -79,15 +91,18 @@ public class CaptureIndexer {
     private int indexOne(UUID captureId, long segmentId, long firstFrame) {
         Integer count = tx.execute(status -> {
             CaptureSegment seg = segments.findById(segmentId).orElseThrow();
-            PacketCapture capture = captures.findById(captureId).orElseThrow();
+            if (!"PENDING".equals(seg.getIndexStatus())) {
+                return seg.getPacketCount() == null ? 0 : seg.getPacketCount();
+            }
+            long alreadyIndexed = captures.findById(captureId).orElseThrow().getPacketsIndexed();
             Path file = storage.segmentFile(captureId, seg.getFileName());
             try {
                 List<Tshark.SummaryRow> rows = tshark.summaries(file);
-                long room = Math.max(0, maxIndexed - capture.getPacketsIndexed());
+                long room = Math.max(0, maxIndexed - alreadyIndexed);
                 List<Tshark.SummaryRow> kept = rows.size() > room ? rows.subList(0, (int) room) : rows;
                 packets.insert(captureId, seg.getSeq(), firstFrame, kept);
                 seg.indexed(firstFrame, rows.size());
-                capture.addIndexed(kept.size(), kept.size() < rows.size());
+                captures.addIndexed(captureId, kept.size(), kept.size() < rows.size());
                 return rows.size();
             } catch (RuntimeException e) {
                 log.warn("Segment {} of capture {} could not be analysed: {}", seg.getSeq(), captureId, e.getMessage());

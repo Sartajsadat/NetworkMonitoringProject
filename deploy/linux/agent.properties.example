@@ -19,3 +19,16 @@ credentials.rotate-after-days=30
 
 # Path of systemctl (used only for "systemctl show <unit>" on platform-approved unit names).
 systemctl.path=/usr/bin/systemctl
+
+# --- Packet capture (Phase 4). OFF unless enabled here by this server's administrator. ---
+# Use deploy/linux/enable-capture.sh: it also gives dumpcap its capture permission.
+capture.enabled=false
+# Interfaces the platform may capture on (comma separated). Empty = every real interface.
+capture.interfaces=
+# Local upper limits; the platform can never request more.
+capture.max-duration-seconds=3600
+capture.max-megabytes=1024
+capture.dumpcap-path=/usr/bin/dumpcap
+# Pieces wait here until uploaded (then deleted). Capture stops if free space drops below the minimum.
+#capture.spool-dir=/var/lib/netmon-agent/captures
+capture.min-free-disk-megabytes=512

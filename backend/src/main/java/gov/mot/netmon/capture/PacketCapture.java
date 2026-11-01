@@ -12,6 +12,8 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "packet_captures")
+// Write only changed columns: agent uploads, agent status reports and user actions touch different fields.
+@org.hibernate.annotations.DynamicUpdate
 public class PacketCapture {
 
     @Id
@@ -118,11 +120,6 @@ public class PacketCapture {
         bytesStored += size;
         segmentsCount++;
         updatedAt = now;
-    }
-
-    public void addIndexed(long packets, boolean truncated) {
-        packetsIndexed += packets;
-        indexTruncated = indexTruncated || truncated;
     }
 
     public void setAgentPackets(Long packets) {

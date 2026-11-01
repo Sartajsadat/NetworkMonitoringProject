@@ -22,7 +22,8 @@ public record Report(
         List<NetworkInterface> network,
         List<Service> services,
         List<ProcessInfo> processes,
-        List<CollectorStatus> collectors) {
+        List<CollectorStatus> collectors,
+        Capture capture) {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Host(String hostname, String platform, String osName, String osVersion, String kernel,
@@ -64,6 +65,16 @@ public record Report(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record ProcessInfo(long pid, String name, String user, Double cpuPercent, Long memoryBytes,
             Double memoryPercent, String state, Instant startedAt) {
+    }
+
+    /** Packet capture capability of this server (Phase 4). Capture is off unless enabled locally. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Capture(boolean enabled, boolean available, String message, List<CaptureInterface> interfaces,
+            Integer maxDurationSeconds, Long maxBytes, String dumpcapVersion) {
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CaptureInterface(String name, String description) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

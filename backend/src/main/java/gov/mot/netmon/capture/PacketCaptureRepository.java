@@ -24,4 +24,15 @@ public interface PacketCaptureRepository extends JpaRepository<PacketCapture, UU
     long reservedBytes(Collection<CaptureStatus> statuses);
 
     List<PacketCapture> findByExpiresAtBeforeAndFilesDeletedAtIsNull(Instant cutoff);
+
+    /**
+     * Indexing runs in the background while the agent keeps updating the capture, so the indexer
+     * changes only its own counters, never the whole row (that would undo a status change).
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @Query(value = "UPDATE packet_captures SET packets_indexed = packets_indexed + :packets, "
+            + "index_truncated = index_truncated OR :truncated WHERE id = :id", nativeQuery = true)
+    int addIndexed(@org.springframework.data.repository.query.Param("id") UUID id,
+            @org.springframework.data.repository.query.Param("packets") long packets,
+            @org.springframework.data.repository.query.Param("truncated") boolean truncated);
 }
