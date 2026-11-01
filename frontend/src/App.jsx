@@ -13,6 +13,11 @@ import UsersPage from './pages/UsersPage.jsx';
 import AuditLogPage from './pages/AuditLogPage.jsx';
 import ChangePasswordPage from './pages/ChangePasswordPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
+import AgentsPage from './pages/monitoring/AgentsPage.jsx';
+import CpuMemoryPage from './pages/monitoring/CpuMemoryPage.jsx';
+import DisksPage from './pages/monitoring/DisksPage.jsx';
+import InterfacesPage from './pages/monitoring/InterfacesPage.jsx';
+import ServicesPage from './pages/monitoring/ServicesPage.jsx';
 
 export default function App() {
   return (
@@ -38,6 +43,11 @@ export default function App() {
           element={<ProtectedRoute roles={PERMISSIONS.manageServers}><ServerFormPage /></ProtectedRoute>}
         />
         <Route path="server-groups" element={<ServerGroupsPage />} />
+        <Route path="agents" element={<AgentsPage />} />
+        <Route path="monitoring/cpu-memory" element={<CpuMemoryPage />} />
+        <Route path="monitoring/disks" element={<DisksPage />} />
+        <Route path="monitoring/interfaces" element={<InterfacesPage />} />
+        <Route path="monitoring/services" element={<ServicesPage />} />
         <Route path="users" element={<ProtectedRoute roles={[ROLES.SUPER_ADMIN]}><UsersPage /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute roles={PERMISSIONS.viewAudit}><AuditLogPage /></ProtectedRoute>} />
         <Route path="account/password" element={<ChangePasswordPage />} />

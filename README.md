@@ -3,15 +3,19 @@
 Central platform for the Ministry of Telecommunication to monitor ministry-hosted servers,
 analyse network traffic, investigate incidents and (later) manage IP access rules.
 
-> **Status: Phase 1 of 9 (foundation).** Authentication, roles, users, server inventory,
-> server groups, audit log, dashboard shell and Docker deployment work today.
-> Metrics, packet capture, alerts and firewall control arrive in later phases and are
-> shown in the UI as *not available yet* — never with placeholder numbers.
+> **Status: Phase 2 of 9 done (Linux monitoring).** Authentication, users, server inventory,
+> audit log, English/Pashto/Dari UI, and a Linux monitoring agent with live and historical
+> CPU, memory, disk, network, service and process data work today.
+> Packet capture, alerts and firewall control arrive in later phases and are shown in the UI as
+> *not available yet* — never with placeholder numbers.
 
 | Document | Contents |
 |---|---|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Architecture, folder layout, phases, database design, security boundaries |
 | [docs/PHASE-1.md](docs/PHASE-1.md) | What Phase 1 delivered, how it works, how to verify it, limitations |
+| [docs/PHASE-2.md](docs/PHASE-2.md) | Linux monitoring agent, metrics storage, monitoring pages |
+| [docs/AGENT-INSTALL.md](docs/AGENT-INSTALL.md) | Installing, enrolling and operating the Linux agent |
+| [docs/AGENT-PROTOCOL.md](docs/AGENT-PROTOCOL.md) | Agent ↔ platform API |
 | [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 
 ## Stack
@@ -141,6 +145,17 @@ Frontend:
 cd frontend && npm test
 ```
 
+Agent:
+
+```bash
+cd agent && ./mvnw test
+```
+
+## Monitoring agent
+
+Build it with `cd agent && ./mvnw package` (creates `agent/target/netmon-agent.jar`), then follow
+[docs/AGENT-INSTALL.md](docs/AGENT-INSTALL.md).
+
 ## Environment variables
 
 All configuration comes from the environment; see [.env.example](.env.example).
@@ -159,12 +174,17 @@ All configuration comes from the environment; see [.env.example](.env.example).
 | `CORS_ALLOWED_ORIGINS` | no | empty (off) | Only needed if UI and API are on different origins |
 | `API_DOCS_ENABLED` | no | `true` (compose: `false`) | Swagger UI / OpenAPI JSON |
 | `LOG_FORMAT` | no | plain | `ecs` or `logstash` for JSON logs |
+| `AGENT_PUBLIC_URL` | no | browser address | Platform address shown in agent install commands |
+| `AGENT_ENROLLMENT_TOKEN_TTL` | no | `P1D` | Lifetime of one-time enrollment tokens |
+| `AGENT_ONLINE_THRESHOLD` | no | `PT2M` | A server is Online if its agent reported within this time |
+| `METRICS_RAW_RETENTION` / `METRICS_ROLLUP_RETENTION` | no | `P7D` / `P90D` | History retention |
 | `HTTP_BIND` / `HTTP_PORT` | no | `127.0.0.1` / `8088` | Where compose publishes the UI |
 
 ## Repository layout
 
 ```
 backend/    Spring Boot API (Maven)        frontend/   React + Vite UI
-docs/       Architecture and phase notes   deploy/     Agent service files (Phase 2+)
+agent/      Linux monitoring agent (Maven) deploy/     Agent install scripts and systemd unit
+docs/       Architecture, phase notes, guides
 docker-compose.yml, .env.example
 ```

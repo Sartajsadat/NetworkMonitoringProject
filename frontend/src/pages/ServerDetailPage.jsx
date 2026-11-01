@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { serverApi } from '../api/endpoints.js';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { metricsApi, serverApi } from '../api/endpoints.js';
 import { useApi } from '../api/useApi.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { PERMISSIONS } from '../auth/roles.js';
@@ -10,26 +10,33 @@ import ErrorAlert from '../components/ErrorAlert.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import PageHeader from '../components/PageHeader.jsx';
 import StatusBadge from '../components/StatusBadge.jsx';
-import TimeAgo from '../components/TimeAgo.jsx';
+import AgentTab from './server/AgentTab.jsx';
+import MetricsTab from './server/MetricsTab.jsx';
+import NetworkTab from './server/NetworkTab.jsx';
+import OverviewTab from './server/OverviewTab.jsx';
+import ProcessesTab from './server/ProcessesTab.jsx';
+import StorageTab from './server/StorageTab.jsx';
 
-function Field({ label, children }) {
-  return (
-    <div className="col-sm-6 col-lg-4 mb-3">
-      <div className="small text-body-secondary">{label}</div>
-      <div>{children ?? <span className="text-body-secondary">—</span>}</div>
-    </div>
-  );
-}
+const TABS = ['overview', 'metrics', 'network', 'storage', 'processes', 'agent'];
+const LIVE_REFRESH_MS = 30000;
 
 export default function ServerDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
+  const tab = TABS.includes(params.get('tab')) ? params.get('tab') : 'overview';
   const { can } = useAuth();
   const { t } = useI18n();
   const { data: s, error, loading, reload } = useApi(() => serverApi.get(id), [id]);
+  const { data: latest, reload: reloadLatest } = useApi(() => metricsApi.latest(id), [id]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+
+  useEffect(() => {
+    const timer = setInterval(() => { reloadLatest(); }, LIVE_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [reloadLatest]);
 
   const doDelete = async () => {
     setDeleting(true);
@@ -48,15 +55,16 @@ export default function ServerDetailPage() {
   if (loading && !s) return <LoadingSpinner />;
   if (error) return <ErrorAlert error={error} onRetry={reload} />;
   if (!s) return null;
+  const canManage = can(PERMISSIONS.manageServers);
 
   return (
     <>
       <PageHeader
-        title={s.name}
+        title={<span className="d-inline-flex align-items-center gap-2 flex-wrap">{s.name} <StatusBadge status={s.connectionStatus} /></span>}
         subtitle={<span className="nm-mono nm-ltr">{s.hostname}</span>}
         breadcrumbs={[{ label: t('servers.title'), to: '/servers' }, { label: s.name }]}
         actions={<>
-          {can(PERMISSIONS.manageServers) && (
+          {canManage && (
             <Link to={`/servers/${id}/edit`} className="btn btn-sm btn-outline-primary">
               <i className="bi bi-pencil me-1" aria-hidden="true" />{t('common.edit')}
             </Link>
@@ -70,71 +78,23 @@ export default function ServerDetailPage() {
       />
       <ErrorAlert error={deleteError} />
 
-      <div className="row g-3">
-        <div className="col-lg-8">
-          <div className="card mb-3"><div className="card-body">
-            <h2 className="h6 mb-3">{t('serverDetail.details')}</h2>
-            <div className="row">
-              <Field label={t('serverDetail.os')}>{t(`os.${s.osFamily}`)}{s.osVersion && <> · <span className="nm-ltr">{s.osVersion}</span></>}</Field>
-              <Field label={t('serverDetail.environment')}>{t(`env.${s.environment}`)}</Field>
-              <Field label={t('serverDetail.organization')}>{s.organization}</Field>
-              <Field label={t('serverDetail.purpose')}>{s.purpose}</Field>
-              <Field label={t('serverDetail.location')}>{s.location}</Field>
-              <Field label={t('serverDetail.monitoringStatus')}><StatusBadge status={s.monitoringStatus} /></Field>
-            </div>
-            {s.notes && <><div className="small text-body-secondary">{t('serverDetail.notes')}</div><div style={{ whiteSpace: 'pre-wrap' }}>{s.notes}</div></>}
-          </div></div>
+      <ul className="nav nav-tabs nm-tabs mb-3" role="tablist">
+        {TABS.map((k) => (
+          <li className="nav-item" key={k} role="presentation">
+            <button type="button" role="tab" aria-selected={tab === k} className={`nav-link ${tab === k ? 'active' : ''}`}
+              onClick={() => setParams({ tab: k }, { replace: true })}>
+              {t(`serverTab.${k}`)}
+            </button>
+          </li>
+        ))}
+      </ul>
 
-          <div className="card mb-3">
-            <div className="card-header"><h2 className="h6 mb-0">{t('serverDetail.ips')}</h2></div>
-            {s.ipAddresses.length === 0 ? (
-              <div className="card-body small text-body-secondary">{t('serverDetail.noIps')}</div>
-            ) : (
-              <table className="table table-sm nm-table">
-                <thead><tr><th>{t('serverDetail.address')}</th><th>{t('serverDetail.version')}</th><th>{t('serverDetail.label')}</th></tr></thead>
-                <tbody>{s.ipAddresses.map((ip) => (
-                  <tr key={ip.address}><td className="nm-mono"><span className="nm-ltr">{ip.address}</span></td><td className="nm-ltr">IPv{ip.version}</td><td>{ip.label || '—'}</td></tr>
-                ))}</tbody>
-              </table>
-            )}
-          </div>
-
-          <div className="card">
-            <div className="card-header"><h2 className="h6 mb-0">{t('serverDetail.metrics')}</h2></div>
-            <div className="card-body">
-              <StatusBadge status="NOT_COLLECTED" />
-              <p className="small text-body-secondary mb-0 mt-2">{t('serverDetail.metricsText')}</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="col-lg-4">
-          <div className="card mb-3"><div className="card-body">
-            <h2 className="h6 mb-3">{t('serverDetail.agent')}</h2>
-            <div className="mb-2"><span className="small text-body-secondary d-block">{t('serverDetail.connection')}</span><StatusBadge status={s.connectionStatus} /></div>
-            <div className="mb-2"><span className="small text-body-secondary d-block">{t('serverDetail.agentHealth')}</span><StatusBadge status={s.agentHealth} /></div>
-            <div className="mb-2"><span className="small text-body-secondary d-block">{t('serverDetail.agentVersion')}</span>{s.agentVersion ? <span className="nm-ltr">{s.agentVersion}</span> : <span className="text-body-secondary">{t('serverDetail.notInstalled')}</span>}</div>
-            <div><span className="small text-body-secondary d-block">{t('serverDetail.lastComm')}</span><TimeAgo value={s.lastSeenAt} /></div>
-          </div></div>
-
-          <div className="card mb-3"><div className="card-body">
-            <h2 className="h6 mb-2">{t('serverDetail.groups')}</h2>
-            {s.groups.length === 0 ? <div className="small text-body-secondary">{t('serverDetail.noGroups')}</div> : (
-              <ul className="list-unstyled mb-0">
-                {s.groups.map((g) => (
-                  <li key={g.id}><Link to={`/servers?groupId=${g.id}`}>{g.name}</Link> <small className="text-body-secondary">({t(`groupType.${g.groupType}`)})</small></li>
-                ))}
-              </ul>
-            )}
-          </div></div>
-
-          <div className="card"><div className="card-body small">
-            <h2 className="h6 mb-2">{t('serverDetail.record')}</h2>
-            <div>{t('serverDetail.registered')}: <TimeAgo value={s.createdAt} />{s.createdBy && <> {t('serverDetail.by')} <strong className="nm-ltr">{s.createdBy}</strong></>}</div>
-            <div>{t('serverDetail.modified')}: <TimeAgo value={s.updatedAt} />{s.updatedBy && <> {t('serverDetail.by')} <strong className="nm-ltr">{s.updatedBy}</strong></>}</div>
-          </div></div>
-        </div>
-      </div>
+      {tab === 'overview' && <OverviewTab server={s} latest={latest} />}
+      {tab === 'metrics' && <MetricsTab serverId={id} latest={latest} key={latest?.collectedAt ? 'with-data' : 'no-data'} />}
+      {tab === 'network' && <NetworkTab latest={latest} />}
+      {tab === 'storage' && <StorageTab latest={latest} />}
+      {tab === 'processes' && <ProcessesTab latest={latest} canManage={canManage} />}
+      {tab === 'agent' && <AgentTab serverId={id} latest={latest} canManage={canManage} onChanged={() => { reload(); reloadLatest(); }} />}
 
       <ConfirmDialog show={confirmDelete} title={t('serverDetail.deleteTitle')} confirmLabel={t('serverDetail.deleteConfirm')} busy={deleting}
         onConfirm={doDelete} onCancel={() => setConfirmDelete(false)}>

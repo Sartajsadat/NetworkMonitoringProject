@@ -34,14 +34,34 @@ function StatTile({ label, value, icon, hint }) {
 }
 
 /** Module name/message in the user's language, falling back to the server's English text. */
-function moduleText(t, m, field) {
+function moduleText(t, m, field, vars) {
+  if (field === 'message') {
+    const specific = `module.${m.key}.message.${m.availability}`;
+    const tr = t(specific, vars);
+    if (tr !== specific) return tr;
+  }
   const key = `module.${m.key}.${field}`;
   const translated = m.key ? t(key) : key;
   return translated === key ? (field === 'name' ? m.module : m.message) : translated;
 }
 
+function FleetTile({ label, value, hint, icon }) {
+  return (
+    <div className="card h-100 nm-stat">
+      <div className="card-body">
+        <div className="d-flex justify-content-between gap-2">
+          <div className="nm-stat-label">{label}</div>
+          <i className={`bi bi-${icon} text-body-secondary`} aria-hidden="true" />
+        </div>
+        <div className="nm-stat-value" style={{ fontSize: '1.6rem' }}>{value}</div>
+        {hint && <div className="small text-body-secondary">{hint}</div>}
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
-  const { t } = useI18n();
+  const { t, units, formatNumber } = useI18n();
   const [refreshSeconds, setRefreshSeconds] = useState(60);
   const { data, error, loading, reload } = useApi(() => dashboardApi.summary(), []);
 
@@ -88,6 +108,33 @@ export default function DashboardPage() {
           </div>
 
           <div className="row g-3 mb-3">
+            <div className="col-12 d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <h2 className="h6 mb-0">{t('dashboard.liveTitle')}</h2>
+              <small className="text-body-secondary">
+                {data.fleet?.reportingServers
+                  ? t('dashboard.reporting', { n: formatNumber(data.fleet.reportingServers) })
+                  : t('dashboard.noneReporting')}
+              </small>
+            </div>
+            <div className="col-6 col-xl-3">
+              <FleetTile icon="cpu" label={t('dashboard.fleet.cpu')} value={units.percent(data.fleet?.avgCpuPercent)}
+                hint={data.fleet?.maxCpuPercent != null ? t('dashboard.fleet.max', { v: units.percent(data.fleet.maxCpuPercent) }) : null} />
+            </div>
+            <div className="col-6 col-xl-3">
+              <FleetTile icon="memory" label={t('dashboard.fleet.memory')} value={units.percent(data.fleet?.avgMemoryPercent)}
+                hint={data.fleet?.maxMemoryPercent != null ? t('dashboard.fleet.max', { v: units.percent(data.fleet.maxMemoryPercent) }) : null} />
+            </div>
+            <div className="col-6 col-xl-3">
+              <FleetTile icon="device-hdd" label={t('dashboard.fleet.disk')} value={units.percent(data.fleet?.maxDiskUsedPercent)} />
+            </div>
+            <div className="col-6 col-xl-3">
+              <FleetTile icon="arrow-down-up" label={t('dashboard.fleet.network')}
+                value={<span style={{ fontSize: '1.1rem' }}>↓ {units.bits(data.fleet?.totalRxBitsPerSec)}<br />↑ {units.bits(data.fleet?.totalTxBitsPerSec)}</span>}
+                hint={t('metric.excludesLoopback')} />
+            </div>
+          </div>
+
+          <div className="row g-3 mb-3">
             {[['dashboard.byOs', data.byOsFamily, 'os'], ['dashboard.byEnv', data.byEnvironment, 'env']].map(([title, map, prefix]) => (
               <div className="col-lg-6" key={title}>
                 <div className="card h-100"><div className="card-body">
@@ -115,7 +162,7 @@ export default function DashboardPage() {
                         <span className="fw-semibold small">{moduleText(t, m, 'name')}</span>
                         <StatusBadge status={m.availability} />
                       </div>
-                      <div className="small text-body-secondary">{moduleText(t, m, 'message')}</div>
+                      <div className="small text-body-secondary">{moduleText(t, m, 'message', { n: formatNumber(data.fleet?.reportingServers ?? 0) })}</div>
                     </li>
                   ))}
                 </ul>

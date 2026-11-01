@@ -25,6 +25,28 @@ const STATUS = {
   USER_ACTIVE: { bg: 'success', icon: 'person-check-fill' },
   USER_INACTIVE: { bg: 'secondary', icon: 'person-dash-fill' },
   USER_LOCKED: { bg: 'warning', icon: 'lock-fill' },
+  // agents
+  REVOKED: { bg: 'danger', icon: 'slash-circle-fill' },
+  NOT_ENROLLED: { bg: 'secondary', icon: 'plug' },
+  LIVE: { bg: 'success', icon: 'broadcast' },
+  STALE: { bg: 'warning', icon: 'clock-history' },
+  // services (systemd)
+  RUNNING: { bg: 'success', icon: 'play-circle-fill' },
+  STOPPED: { bg: 'secondary', icon: 'stop-circle' },
+  FAILED: { bg: 'danger', icon: 'x-circle-fill' },
+  STARTING: { bg: 'info', icon: 'arrow-up-circle' },
+  STOPPING: { bg: 'info', icon: 'arrow-down-circle' },
+  NOT_FOUND: { bg: 'dark', icon: 'question-diamond' },
+  UNKNOWN: { bg: 'light', icon: 'question-circle' },
+  // collectors
+  OK: { bg: 'success', icon: 'check-lg' },
+  UNAVAILABLE: { bg: 'secondary', icon: 'dash-circle' },
+  PERMISSION_DENIED: { bg: 'warning', icon: 'lock-fill' },
+  ERROR: { bg: 'danger', icon: 'exclamation-octagon-fill' },
+  // interface operational state
+  IF_UP: { bg: 'success', icon: 'arrow-up-circle-fill' },
+  IF_DOWN: { bg: 'secondary', icon: 'arrow-down-circle' },
+  IF_OTHER: { bg: 'light', icon: 'question-circle' },
 };
 
 export default function StatusBadge({ status, label }) {

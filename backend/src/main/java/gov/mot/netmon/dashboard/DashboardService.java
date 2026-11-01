@@ -20,7 +20,10 @@ import gov.mot.netmon.audit.AuditLogResponse;
 import gov.mot.netmon.audit.AuditResult;
 import gov.mot.netmon.config.AppProperties;
 import gov.mot.netmon.dashboard.DashboardSummaryResponse.Availability;
+import gov.mot.netmon.dashboard.DashboardSummaryResponse.Fleet;
 import gov.mot.netmon.dashboard.DashboardSummaryResponse.ModuleStatus;
+import gov.mot.netmon.metrics.SnapshotStore;
+import gov.mot.netmon.agent.AgentProtocol;
 import gov.mot.netmon.security.CurrentUser;
 import gov.mot.netmon.server.Server;
 import gov.mot.netmon.server.ServerEnums.ConnectionStatus;
@@ -36,11 +39,13 @@ public class DashboardService {
     private final ServerGroupRepository groups;
     private final UserRepository users;
     private final AuditLogRepository auditLogs;
+    private final SnapshotStore snapshots;
     private final Clock clock;
     private final Duration onlineThreshold;
 
     public DashboardService(ServerRepository servers, ServerGroupRepository groups, UserRepository users,
-            AuditLogRepository auditLogs, Clock clock, AppProperties props) {
+            AuditLogRepository auditLogs, SnapshotStore snapshots, Clock clock, AppProperties props) {
+        this.snapshots = snapshots;
         this.servers = servers;
         this.groups = groups;
         this.users = users;
@@ -80,15 +85,54 @@ public class DashboardService {
                     .map(AuditLogResponse::from).getContent();
         }
 
+        Fleet fleet = fleet(all, now);
         return new DashboardSummaryResponse(now, all.size(), connectionOut, byStatus, byOs, byEnv, groups.count(),
-                activeUsers, modules(), security);
+                activeUsers, modules(fleet.reportingServers()), fleet, security);
+    }
+
+    private Fleet fleet(List<Server> all, Instant now) {
+        var snaps = snapshots.findAll();
+        java.util.List<AgentProtocol.Report> live = all.stream()
+                .filter(s -> s.connectionStatus(now, onlineThreshold) == ConnectionStatus.ONLINE)
+                .map(s -> snaps.get(s.getId()))
+                .filter(java.util.Objects::nonNull)
+                .filter(sn -> java.time.Duration.between(sn.collectedAt(), now).compareTo(onlineThreshold) <= 0)
+                .map(SnapshotStore.Snapshot::report)
+                .toList();
+        if (live.isEmpty()) {
+            return new Fleet(0, null, null, null, null, null, null, null, 0, null);
+        }
+        var cpu = live.stream().map(r -> r.cpu() == null ? null : r.cpu().usagePercent()).filter(java.util.Objects::nonNull)
+                .mapToDouble(Double::doubleValue).summaryStatistics();
+        var mem = live.stream().map(r -> r.memory() == null ? null : r.memory().usedPercent()).filter(java.util.Objects::nonNull)
+                .mapToDouble(Double::doubleValue).summaryStatistics();
+        var disk = live.stream().filter(r -> r.disks() != null).flatMap(r -> r.disks().stream())
+                .map(AgentProtocol.Disk::usedPercent).filter(java.util.Objects::nonNull).mapToDouble(Double::doubleValue).max();
+        // Loopback traffic never leaves the host, so it is not counted as network throughput.
+        var nics = live.stream().filter(r -> r.network() != null).flatMap(r -> r.network().stream())
+                .filter(n -> !"lo".equals(n.name())).toList();
+        Double rx = nics.stream().anyMatch(n -> n.rxBitsPerSec() != null)
+                ? nics.stream().map(AgentProtocol.NetworkInterface::rxBitsPerSec).filter(java.util.Objects::nonNull).mapToDouble(Double::doubleValue).sum() : null;
+        Double tx = nics.stream().anyMatch(n -> n.txBitsPerSec() != null)
+                ? nics.stream().map(AgentProtocol.NetworkInterface::txBitsPerSec).filter(java.util.Objects::nonNull).mapToDouble(Double::doubleValue).sum() : null;
+        int errors = live.stream().filter(r -> r.collectors() != null).mapToInt(r -> (int) r.collectors().stream()
+                .filter(c -> !"OK".equals(c.status())).count()).sum();
+        Instant oldest = live.stream().map(AgentProtocol.Report::collectedAt).min(Instant::compareTo).orElse(null);
+        return new Fleet(live.size(),
+                cpu.getCount() == 0 ? null : cpu.getAverage(), cpu.getCount() == 0 ? null : cpu.getMax(),
+                mem.getCount() == 0 ? null : mem.getAverage(), mem.getCount() == 0 ? null : mem.getMax(),
+                disk.isPresent() ? disk.getAsDouble() : null, rx, tx, errors, oldest);
     }
 
     /** Honest status of each telemetry module in this release. Updated as phases are delivered. */
-    private static List<ModuleStatus> modules() {
+    private static List<ModuleStatus> modules(int reportingServers) {
+        ModuleStatus metrics = reportingServers > 0
+                ? new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.AVAILABLE,
+                        reportingServers + " server(s) reporting live data. Windows agents arrive in Phase 3.")
+                : new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.NOT_COLLECTED,
+                        "No agent is reporting. Enroll a Linux agent from a server's page (Windows agents arrive in Phase 3).");
         return List.of(
-                new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.NOT_COLLECTED,
-                        "No monitoring agent is installed yet. Agents arrive in Phase 2 (Linux) and Phase 3 (Windows)."),
+                metrics,
                 new ModuleStatus("capture", "Packet capture", Availability.NOT_CONFIGURED,
                         "Packet capture integration (dumpcap/TShark) arrives in Phase 4."),
                 new ModuleStatus("alerts", "Alerts and event timeline", Availability.NOT_CONFIGURED,

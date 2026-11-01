@@ -1,0 +1,21 @@
+# /etc/netmon-agent/agent.properties  (owner root, mode 0644; contains no secrets)
+
+# Address of the central platform. HTTPS is required (plain http only for localhost or with
+# tls.allow-insecure-http=true in an isolated lab).
+platform.url=https://netmon.example.gov.af
+
+# PEM file of the ministry CA that signed the platform's TLS certificate (leave empty to use
+# the Java default trust store).
+tls.ca-certificate=
+
+# Where the agent keeps its credential (credentials.json, mode 0600).
+state.dir=/var/lib/netmon-agent
+
+# How many reports to keep in memory while the platform is unreachable (240 x 30 s = 2 hours).
+buffer.max-reports=240
+
+# The agent rotates its own credential after this many days.
+credentials.rotate-after-days=30
+
+# Path of systemctl (used only for "systemctl show <unit>" on platform-approved unit names).
+systemctl.path=/usr/bin/systemctl

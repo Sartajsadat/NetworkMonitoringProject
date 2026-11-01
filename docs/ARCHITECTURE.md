@@ -180,8 +180,11 @@ audit_logs (id BIGSERIAL, occurred_at, actor_user_id, actor_username, actor_role
 system_settings (key PK, value, updated_at)   -- holds "setup completed" marker
 ```
 
-**Planned tables (later phases)**: `agents`, `agent_credentials`, `network_interfaces`,
-`metric_samples`, `process_snapshots`, `service_statuses` (P2); `packet_captures`,
+**Phase 2 tables (done)**: `agents`, `agent_enrollment_tokens`, `server_agent_configs`,
+`server_snapshots`, `metric_samples`, `metric_rollups_5m` — see PHASE-2.md for why the latest
+snapshot replaced separate interface/service/process tables.
+
+**Planned tables (later phases)**: `packet_captures`,
 `packet_summaries` (P4); `system_events`, `alerts`, `alert_rules`, `alert_events`,
 `log_entries` (P5); `subnets`, `ip_addresses`, `network_devices`, `network_flows` (P6);
 `firewall_integrations`, `firewall_rules`, `access_policy_requests`,

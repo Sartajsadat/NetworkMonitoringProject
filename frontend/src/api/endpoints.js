@@ -52,3 +52,24 @@ export const auditApi = {
 export const dashboardApi = {
   summary: () => api.get('/dashboard/summary').then((r) => r.data),
 };
+
+// Agents (Phase 2)
+export const agentApi = {
+  list: () => api.get('/agents').then((r) => r.data),
+  forServer: (serverId) => api.get(`/servers/${serverId}/agent`).then((r) => r.data),
+  createToken: (serverId) => api.post(`/servers/${serverId}/agent/enrollment-token`).then((r) => r.data),
+  revoke: (serverId) => api.post(`/servers/${serverId}/agent/revoke`).then((r) => r.data),
+  updateConfig: (serverId, body) => api.put(`/servers/${serverId}/agent/config`, body).then((r) => r.data),
+};
+
+// Metrics (Phase 2)
+export const metricsApi = {
+  history: (serverId, { metrics, resource, from, to }) =>
+    api.get(`/servers/${serverId}/metrics`, {
+      params: { metric: metrics, resource: resource || undefined, from, to },
+      paramsSerializer: { indexes: null }, // metric=a&metric=b
+    }).then((r) => r.data),
+  latest: (serverId) => api.get(`/servers/${serverId}/metrics/latest`).then((r) => r.data),
+  processes: (serverId) => api.get(`/servers/${serverId}/processes`).then((r) => r.data),
+  fleet: () => api.get('/monitoring/fleet').then((r) => r.data),
+};

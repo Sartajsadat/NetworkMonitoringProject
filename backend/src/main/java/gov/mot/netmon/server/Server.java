@@ -159,6 +159,35 @@ public class Server {
         }
     }
 
+    /**
+     * Records a report from this server's agent. The first report moves PENDING_AGENT to ACTIVE;
+     * PAUSED and DECOMMISSIONED are never changed by an agent.
+     */
+    public void recordAgentReport(String agentVersion, boolean degraded, Instant seenAt) {
+        this.agentVersion = agentVersion;
+        this.agentHealth = degraded ? AgentHealth.DEGRADED : AgentHealth.HEALTHY;
+        if (lastSeenAt == null || seenAt.isAfter(lastSeenAt)) {
+            this.lastSeenAt = seenAt;
+        }
+        if (monitoringStatus == MonitoringStatus.PENDING_AGENT) {
+            monitoringStatus = MonitoringStatus.ACTIVE;
+        }
+    }
+
+    /** Called when the agent is revoked: the server has no reporting agent any more. */
+    public void clearAgent() {
+        this.agentHealth = AgentHealth.NO_AGENT;
+        this.agentVersion = null;
+        if (monitoringStatus == MonitoringStatus.ACTIVE) {
+            monitoringStatus = MonitoringStatus.PENDING_AGENT;
+        }
+        this.updatedAt = Instant.now();
+    }
+
+    public boolean acceptsMetrics() {
+        return monitoringStatus == MonitoringStatus.PENDING_AGENT || monitoringStatus == MonitoringStatus.ACTIVE;
+    }
+
     public void replaceGroups(Set<ServerGroup> newGroups) {
         groups.clear();
         groups.addAll(newGroups);

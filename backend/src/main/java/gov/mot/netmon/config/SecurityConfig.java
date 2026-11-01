@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -13,11 +14,16 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gov.mot.netmon.agent.AgentAuthenticationFilter;
+import gov.mot.netmon.agent.AgentRepository;
 import gov.mot.netmon.security.AccessTokenAuthenticationConverter;
 import gov.mot.netmon.security.JsonSecurityHandlers;
 import gov.mot.netmon.security.JwtService;
@@ -40,7 +46,33 @@ public class SecurityConfig {
         "/swagger-ui.html",
     };
 
+    /**
+     * Agent API: separate chain, agent credentials only (never user tokens), no cookies, no CORS.
+     * Enrollment is public but requires a one-time enrollment token in the body.
+     */
     @Bean
+    @Order(1)
+    SecurityFilterChain agentFilterChain(HttpSecurity http, AgentRepository agents, ObjectMapper mapper, Clock clock,
+            JsonSecurityHandlers handlers) throws Exception {
+        http
+            .securityMatcher("/api/v1/agent/**")
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(AbstractHttpConfigurer::disable)
+            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .httpBasic(AbstractHttpConfigurer::disable)
+            .formLogin(AbstractHttpConfigurer::disable)
+            .logout(AbstractHttpConfigurer::disable)
+            .anonymous(a -> { })
+            .addFilterBefore(new AgentAuthenticationFilter(agents, mapper, clock), UsernamePasswordAuthenticationFilter.class)
+            .authorizeHttpRequests(a -> a
+                .requestMatchers(HttpMethod.POST, "/api/v1/agent/enroll").permitAll()
+                .anyRequest().hasRole("AGENT"))
+            .exceptionHandling(e -> e.authenticationEntryPoint(handlers).accessDeniedHandler(handlers));
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     SecurityFilterChain filterChain(HttpSecurity http, JwtService jwtService,
             AccessTokenAuthenticationConverter converter, JsonSecurityHandlers handlers) throws Exception {
         http

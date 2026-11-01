@@ -20,7 +20,17 @@ public record DashboardSummaryResponse(
         long serverGroups,
         long activeUsers,
         List<ModuleStatus> modules,
+        Fleet fleet,
         List<AuditLogResponse> recentSecurityEvents) {
+
+    /**
+     * Aggregates over servers whose agent reported within the online threshold. All values are null
+     * when no server is reporting (never zero, which would look like a real measurement).
+     */
+    public record Fleet(int reportingServers, Double avgCpuPercent, Double maxCpuPercent, Double avgMemoryPercent,
+            Double maxMemoryPercent, Double maxDiskUsedPercent, Double totalRxBitsPerSec, Double totalTxBitsPerSec,
+            int collectorErrors, java.time.Instant oldestDataAt) {
+    }
 
     public enum Availability { AVAILABLE, NOT_COLLECTED, NOT_CONFIGURED, UNSUPPORTED }
 

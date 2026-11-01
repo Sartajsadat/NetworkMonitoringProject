@@ -1,0 +1,41 @@
+# NetMon monitoring agent (Linux). Installed by deploy/linux/install-agent.sh.
+# Runs as an unprivileged user with a read-only view of the system.
+[Unit]
+Description=NetMon monitoring agent
+Documentation=file:///opt/netmon-agent/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=netmon-agent
+Group=netmon-agent
+ExecStart=/usr/bin/java -Xms16m -Xmx96m -XX:+UseSerialGC -jar /opt/netmon-agent/netmon-agent.jar run --config /etc/netmon-agent/agent.properties
+Restart=on-failure
+RestartSec=15s
+
+# --- hardening: the agent only reads /proc, /sys and systemd state, and writes its own state dir ---
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ReadWritePaths=/var/lib/netmon-agent
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+SystemCallArchitectures=native
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

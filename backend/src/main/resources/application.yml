@@ -80,3 +80,11 @@ app:
   monitoring:
     # A server counts as "online" if its agent reported within this window (Phase 2+).
     online-threshold: ${AGENT_ONLINE_THRESHOLD:PT2M}
+    raw-retention: ${METRICS_RAW_RETENTION:P7D}
+    rollup-retention: ${METRICS_ROLLUP_RETENTION:P90D}
+  agents:
+    enrollment-token-ttl: ${AGENT_ENROLLMENT_TOKEN_TTL:P1D}
+    credential-grace-period: ${AGENT_CREDENTIAL_GRACE_PERIOD:PT10M}
+    default-report-interval: ${AGENT_DEFAULT_REPORT_INTERVAL:30}
+    # Address agents use to reach this platform, e.g. https://netmon.mot.gov.af (used in install commands).
+    public-url: ${AGENT_PUBLIC_URL:}

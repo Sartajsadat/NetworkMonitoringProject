@@ -3,6 +3,7 @@ import en from './en.js';
 import ps from './ps.js';
 import fa from './fa.js';
 import { LANGUAGES, initialLanguage, saveLanguage } from './languages.js';
+import { makeFormatters } from '../utils/format.js';
 
 const DICTIONARIES = { en, ps, fa };
 
@@ -58,7 +59,23 @@ export function I18nProvider({ children, initial, stylesheets }) {
         year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
       });
     const formatNumber = (n) => (n === null || n === undefined ? '' : numberFormat.format(n));
+    const units = makeFormatters(locale, language.dir === 'rtl');
+    const formatDuration = (seconds) => {
+      if (seconds === null || seconds === undefined) return '—';
+      const d = Math.floor(seconds / 86400);
+      const h = Math.floor((seconds % 86400) / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      if (d > 0) return t('time.daysHours', { d: formatNumber(d), h: formatNumber(h) });
+      if (h > 0) return t('time.hoursMinutes', { h: formatNumber(h), m: formatNumber(m) });
+      return t('time.minutes', { m: formatNumber(m) });
+    };
+    const timeShort = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit', hour12: false });
+    const dateTimeShort = new Intl.DateTimeFormat(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false });
     return {
+      /** Monitoring unit formatters: bytes, bits (per second), percent, decimal, perSec. */
+      units,
+      formatDuration,
+      formatAxisTime: (ms, long) => (long ? dateTimeShort : timeShort).format(new Date(ms)),
       lang,
       language,
       dir: language.dir,
