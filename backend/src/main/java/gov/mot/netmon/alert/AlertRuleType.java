@@ -19,7 +19,8 @@ public enum AlertRuleType {
     AGENT_DEGRADED(EventCategory.AGENT, Unit.NONE, 0, 0, true, "COLLECTOR", true),
     FAILED_LOGINS(EventCategory.SECURITY, Unit.COUNT, 1, 100_000, true, "IP", false),
     CAPTURE_STORAGE_HIGH(EventCategory.CAPTURE, Unit.PERCENT, 1, 100, false, null, false),
-    FIREWALL_DRIFT(EventCategory.FIREWALL, Unit.NONE, 0, 0, false, null, true);
+    FIREWALL_DRIFT(EventCategory.FIREWALL, Unit.NONE, 0, 0, false, null, true),
+    PLATFORM_DISK_LOW(EventCategory.SYSTEM, Unit.PERCENT, 50, 99, false, null, false);
 
     public enum Unit { PERCENT, BITS_PER_SECOND, RATIO, PER_SECOND, SECONDS, COUNT, NONE }
 

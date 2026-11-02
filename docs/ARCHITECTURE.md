@@ -207,8 +207,10 @@ See PHASE-7.md and FIREWALL.md.
 application policies are rows of `firewall_rules` with `application_id`, `app_mode` and
 `destinations`, so they share the approval and verification workflow. See PHASE-8.md.
 
-**Planned tables (later phases)**: `log_entries` (P5b);
-`retention_policies`, `notification_settings` (P5/P9).
+**Phase 9 (done)**: `retention_policies` (one row per data type; enforced hourly; audit log
+purge only through `purge_audit_logs()` with a one-year floor in the trigger). See PHASE-9.md.
+
+**Not built**: `log_entries` (P5b), `notification_settings` (notifications are optional in the brief).
 
 **Time-series strategy**: `metric_samples` will be a narrow table indexed on
 `(server_id, metric, collected_at DESC)` with a retention job deleting/rolling up old rows.

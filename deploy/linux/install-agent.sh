@@ -2,20 +2,21 @@
 # Installs the NetMon Linux agent as a systemd service and enrolls it.
 #
 #   sudo ./install-agent.sh --jar netmon-agent.jar --url https://netmon.example.gov.af --token <ENROLLMENT_TOKEN> [--ca ministry-ca.pem]
-#                           [--enable-capture [--capture-interfaces eth0,ens192]]
+#                           [--enable-capture [--capture-interfaces eth0,ens192]] [--allow-insecure-http (isolated lab only)]
 #
 # What it does: creates the system user "netmon-agent", copies the jar to /opt/netmon-agent,
 # writes /etc/netmon-agent/agent.properties, enrolls with the one-time token, starts the service.
 # It does not open any port and gives the agent no root privileges.
 set -euo pipefail
 
-JAR="" URL="" TOKEN="" CA="" CAPTURE=0 CAPTURE_IFACES=""
+JAR="" URL="" TOKEN="" CA="" CAPTURE=0 CAPTURE_IFACES="" INSECURE=false
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --jar) JAR="$2"; shift 2 ;;
     --url) URL="$2"; shift 2 ;;
     --token) TOKEN="$2"; shift 2 ;;
     --ca) CA="$2"; shift 2 ;;
+    --allow-insecure-http) INSECURE=true; shift ;;   # isolated lab only: plain http:// to the platform
     --enable-capture) CAPTURE=1; shift ;;
     --capture-interfaces) CAPTURE_IFACES="$2"; shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
@@ -53,6 +54,7 @@ if [[ ! -f /etc/netmon-agent/agent.properties ]]; then
   cat > /etc/netmon-agent/agent.properties <<PROPS
 platform.url=${URL}
 ${CA_LINE}
+tls.allow-insecure-http=${INSECURE}
 state.dir=/var/lib/netmon-agent
 buffer.max-reports=240
 credentials.rotate-after-days=30

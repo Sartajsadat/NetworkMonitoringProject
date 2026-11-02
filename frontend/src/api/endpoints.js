@@ -161,3 +161,11 @@ export const appApi = {
   preview: (body) => api.post('/application-policies/preview', body).then((r) => r.data),
   request: (body) => api.post('/application-policies', body).then((r) => r.data),
 };
+
+// Platform operations (Phase 9)
+export const opsApi = {
+  retention: () => api.get('/retention-policies').then((r) => r.data),
+  updateRetention: (type, retentionDays, reason) => api.put(`/retention-policies/${type}`, { retentionDays, reason }).then((r) => r.data),
+  runRetention: () => api.post('/retention-policies/run').then((r) => r.data),
+  health: () => api.get('/system/health').then((r) => r.data),
+};

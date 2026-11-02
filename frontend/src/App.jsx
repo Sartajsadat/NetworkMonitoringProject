@@ -38,6 +38,8 @@ import RuleRequestPage from './pages/firewall/RuleRequestPage.jsx';
 import RuleDetailPage from './pages/firewall/RuleDetailPage.jsx';
 import AppAccessPage from './pages/firewall/AppAccessPage.jsx';
 import AppDetailPage from './pages/firewall/AppDetailPage.jsx';
+import RetentionPage from './pages/admin/RetentionPage.jsx';
+import HealthPage from './pages/admin/HealthPage.jsx';
 
 export default function App() {
   return (
@@ -88,6 +90,8 @@ export default function App() {
         <Route path="ip-policies/:id" element={<RuleDetailPage />} />
         <Route path="app-access" element={<AppAccessPage />} />
         <Route path="app-access/:id" element={<AppDetailPage />} />
+        <Route path="admin/retention" element={<ProtectedRoute roles={PERMISSIONS.viewOperations}><RetentionPage /></ProtectedRoute>} />
+        <Route path="admin/health" element={<ProtectedRoute roles={PERMISSIONS.viewOperations}><HealthPage /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute roles={[ROLES.SUPER_ADMIN]}><UsersPage /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute roles={PERMISSIONS.viewAudit}><AuditLogPage /></ProtectedRoute>} />
         <Route path="account/password" element={<ChangePasswordPage />} />

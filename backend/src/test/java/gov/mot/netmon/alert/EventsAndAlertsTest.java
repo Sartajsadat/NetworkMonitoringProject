@@ -258,7 +258,7 @@ class EventsAndAlertsTest extends AgentTestSupport {
                 .content(toJson(scoped))).andExpect(status().isBadRequest());
         mvc.perform(post("/api/v1/alert-rules").header("Authorization", infra).contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(rule))).andExpect(status().isCreated()).andExpect(jsonPath("$.resourceFilter").value("/var"));
-        mvc.perform(get("/api/v1/alert-rules").header("Authorization", readOnly)).andExpect(jsonPath("$.length()").value(13));
+        mvc.perform(get("/api/v1/alert-rules").header("Authorization", readOnly)).andExpect(jsonPath("$.length()").value(14));
         mvc.perform(get("/api/v1/alert-rules/types").header("Authorization", readOnly))
                 .andExpect(jsonPath("$[?(@.type=='TRAFFIC_SPIKE')].unit").value("RATIO"));
         assertThat(auditCount("ALERT_RULE_CREATED", "SUCCESS")).isPositive();

@@ -3,7 +3,7 @@
 Central platform for the Ministry of Telecommunication to monitor ministry-hosted servers,
 analyse network traffic, investigate incidents and (later) manage IP access rules.
 
-> **Status: Phase 8 of 9 done (application access control).** Done so far:
+> **Status: all 9 phases done (Phase 9: production hardening).** Done so far:
 > - authentication, users, server inventory and the audit log;
 > - English/Pashto/Dari UI;
 > - monitoring agents for Linux and Windows (live and historical CPU, memory, disk, network,
@@ -15,12 +15,14 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 > - IP allow/block rules with second-person approval, dry run first, and verified enforcement on
 >   server firewalls (nftables, UFW, Windows Defender Firewall);
 > - per-application network policies (block internet / allow only / block destinations) enforced on
->   a Linux account or a Windows program or service, with unsupported cases shown as such.
+>   a Linux account or a Windows program or service, with unsupported cases shown as such;
+> - production hardening: retention policies in the UI, platform health page, tested backup/restore,
+>   TLS proxy configuration, API-wide security tests and a measured load test.
 >
-> The Windows agent and Windows capture still need a test on a real Windows server: see
-> docs/PHASE-3.md and docs/PHASE-4.md. Centralized logs and the hosted-application inventory
-> (marked "Phase 5b") arrive later and are shown in the UI as
-> *not available yet*, never with placeholder numbers.
+> Windows (agent, capture, firewall) and UFW still need a test on real lab servers; central
+> firewall adapters wait for the ministry's equipment list. Centralized logs and the
+> hosted-application inventory (marked "Phase 5b") are not built. Everything open is listed in
+> [docs/KNOWN-LIMITATIONS.md](docs/KNOWN-LIMITATIONS.md); the UI never shows placeholder data.
 
 | Document | Contents |
 |---|---|
@@ -39,6 +41,14 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 | [docs/PHASE-7.md](docs/PHASE-7.md) | Firewall targets, IP allow/block workflow, real nftables test |
 | [docs/PHASE-8.md](docs/PHASE-8.md) | Application access control: identities, policy types, real test |
 | [docs/FIREWALL.md](docs/FIREWALL.md) | Enabling firewall control, scope, safety checks, statuses, **recovery procedure** |
+| [docs/PHASE-9.md](docs/PHASE-9.md) | Production hardening: what was reviewed, tested and measured |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | **Production deployment**: sizing, TLS, ports, monitoring, upgrade and rollback |
+| [docs/SECURITY.md](docs/SECURITY.md) | Security controls, configuration, credential rotation, incident response |
+| [docs/BACKUP.md](docs/BACKUP.md) | Backup and restore (tested) |
+| [docs/INSTALL-UBUNTU.md](docs/INSTALL-UBUNTU.md) | Ubuntu test environment, step by step |
+| [docs/INSTALL-WINDOWS-DEV.md](docs/INSTALL-WINDOWS-DEV.md) | Windows development environment |
+| [docs/DIAGRAMS.md](docs/DIAGRAMS.md) | Architecture, network communication and database diagrams |
+| [docs/KNOWN-LIMITATIONS.md](docs/KNOWN-LIMITATIONS.md) | What is not supported, not built or not yet tested |
 | [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 
 ## Stack

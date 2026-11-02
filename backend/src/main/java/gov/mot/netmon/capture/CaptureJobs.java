@@ -78,4 +78,16 @@ public class CaptureJobs {
             service.purge(c, "retention", "Retention period of " + c.getRetentionDays() + " days ended");
         }
     }
+
+    /** Retention policy: files of captures requested before the cutoff (whatever their own retention). */
+    @Transactional
+    public int purgeOlderThan(Instant cutoff, int days) {
+        int n = 0;
+        for (PacketCapture c : captures.findByRequestedAtBeforeAndFilesDeletedAtIsNull(cutoff)) {
+            if (c.getStatus().isActive()) continue;
+            service.purge(c, "retention", "Capture retention policy of " + days + " days");
+            n++;
+        }
+        return n;
+    }
 }

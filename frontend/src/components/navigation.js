@@ -51,8 +51,8 @@ export const NAV_SECTIONS = [
     title: 'nav.section.administration',
     items: [
       { to: '/users', label: 'nav.users', icon: 'people', roles: [ROLES.SUPER_ADMIN] },
-      { label: 'nav.config', icon: 'sliders', phase: 9, roles: [ROLES.SUPER_ADMIN] },
-      { label: 'nav.retention', icon: 'database-gear', phase: 9, roles: [ROLES.SUPER_ADMIN] },
+      { to: '/admin/health', label: 'nav.config', icon: 'heart-pulse', roles: PERMISSIONS.viewOperations },
+      { to: '/admin/retention', label: 'nav.retention', icon: 'database-gear', roles: PERMISSIONS.viewOperations },
     ],
   },
 ];

@@ -25,6 +25,8 @@ public interface PacketCaptureRepository extends JpaRepository<PacketCapture, UU
 
     List<PacketCapture> findByExpiresAtBeforeAndFilesDeletedAtIsNull(Instant cutoff);
 
+    List<PacketCapture> findByRequestedAtBeforeAndFilesDeletedAtIsNull(Instant cutoff);
+
     /**
      * Indexing runs in the background while the agent keeps updating the capture, so the indexer
      * changes only its own counters, never the whole row (that would undo a status change).

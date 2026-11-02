@@ -66,6 +66,8 @@ public abstract class IntegrationTest {
                 + "refresh_tokens, user_roles, users, system_settings");
         loginRateLimiter.reset();
         jdbc.execute(defaultAlertRules());
+        // Depends on the real disk of the machine running the tests; enabled only in its own test.
+        jdbc.update("UPDATE alert_rules SET enabled = false WHERE rule_type = 'PLATFORM_DISK_LOW'");
     }
 
     private static String defaultRules;
@@ -74,7 +76,7 @@ public abstract class IntegrationTest {
     private static synchronized String defaultAlertRules() {
         if (defaultRules == null) {
             StringBuilder b = new StringBuilder();
-            for (String file : new String[] {"V4__events_and_alerts.sql", "V6__firewall.sql"}) {
+            for (String file : new String[] {"V4__events_and_alerts.sql", "V6__firewall.sql", "V8__retention_and_operations.sql"}) {
                 try (var in = IntegrationTest.class.getResourceAsStream("/db/migration/" + file)) {
                     String sql = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
                     b.append(sql.substring(sql.indexOf("INSERT INTO alert_rules"))).append('\n');

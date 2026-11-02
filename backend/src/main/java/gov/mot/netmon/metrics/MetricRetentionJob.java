@@ -63,22 +63,28 @@ public class MetricRetentionJob {
         return rows;
     }
 
-    @Scheduled(fixedDelayString = "PT1H", initialDelayString = "PT10M")
+    /** With the configured defaults (tests). Production runs go through the retention policies. */
     @Transactional
-    public void enforceRetention() {
+    public long[] enforceRetention() {
+        return enforce(props.rawRetention(), props.rollupRetention());
+    }
+
+    /** @return {raw samples deleted, rollups deleted} */
+    @Transactional
+    public long[] enforce(Duration rawRetention, Duration rollupRetention) {
         Instant now = clock.instant();
         // Re-check the window about to be deleted (covers periods when the 5-minute job did not run).
         // Cut on a 5-minute boundary so whole buckets are deleted; a half-deleted bucket would otherwise
         // be re-rolled from partial data.
-        long cut = now.minus(props.rawRetention()).getEpochSecond();
+        long cut = now.minus(rawRetention).getEpochSecond();
         Instant rawCutoff = Instant.ofEpochSecond(cut - Math.floorMod(cut, 300));
         rollupBetween(rawCutoff.minus(Duration.ofHours(2)), rawCutoff.plus(Duration.ofMinutes(5)));
         int raw = jdbc.update("DELETE FROM metric_samples WHERE collected_at < ?", Timestamp.from(rawCutoff));
-        int rolled = jdbc.update("DELETE FROM metric_rollups_5m WHERE bucket_start < ?",
-                Timestamp.from(now.minus(props.rollupRetention())));
+        int rolled = jdbc.update("DELETE FROM metric_rollups_5m WHERE bucket_start < ?", Timestamp.from(now.minus(rollupRetention)));
         int expiredTokens = tokens.deleteExpiredBefore(now.minus(Duration.ofDays(7)));
         if (raw + rolled + expiredTokens > 0) {
             log.info("Retention: removed {} raw samples, {} rollups, {} expired enrollment tokens", raw, rolled, expiredTokens);
         }
+        return new long[] {raw, rolled};
     }
 }

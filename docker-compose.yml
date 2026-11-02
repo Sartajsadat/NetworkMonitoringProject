@@ -6,10 +6,20 @@
 #
 name: netmon
 
+# Container logs are rotated (Docker keeps at most 3 × 20 MB per service).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "3"
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
+    logging: *logging
+    security_opt: ["no-new-privileges:true"]
+    shm_size: 256m
     environment:
       POSTGRES_DB: ${DB_NAME:-netmon}
       POSTGRES_USER: ${DB_USERNAME:-netmon}
@@ -27,6 +37,11 @@ services:
   backend:
     build: ./backend
     restart: unless-stopped
+    logging: *logging
+    # Unprivileged process (see backend/Dockerfile); no Linux capabilities needed.
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: ${BACKEND_MEMORY:-2g}
     depends_on:
       db:
         condition: service_healthy
@@ -71,8 +86,17 @@ services:
   frontend:
     build: ./frontend
     restart: unless-stopped
+    logging: *logging
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     ports:
       - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8088}:8080"
 

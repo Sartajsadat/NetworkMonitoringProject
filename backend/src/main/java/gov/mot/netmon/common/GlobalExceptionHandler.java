@@ -80,6 +80,16 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", ex.getMessage(), req, List.of());
     }
 
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    ResponseEntity<ApiError> handleMediaType(org.springframework.web.HttpMediaTypeNotSupportedException ex, HttpServletRequest req) {
+        return build(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE", "Content type not supported for this request", req, List.of());
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotAcceptableException.class)
+    ResponseEntity<ApiError> handleAccept(org.springframework.web.HttpMediaTypeNotAcceptableException ex, HttpServletRequest req) {
+        return build(HttpStatus.NOT_ACCEPTABLE, "NOT_ACCEPTABLE", "Requested response type not available", req, List.of());
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     ResponseEntity<ApiError> handleNoResource(NoResourceFoundException ex, HttpServletRequest req) {
         return build(HttpStatus.NOT_FOUND, "NOT_FOUND", "Resource not found", req, List.of());

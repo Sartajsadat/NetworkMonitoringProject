@@ -33,6 +33,9 @@ export const PERMISSIONS = {
   requestFirewallRules: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
   manageFirewall: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN],
   enforceFirewall: [ROLES.SUPER_ADMIN],
+  // Platform operations: retention and health. Changes are super-admin only.
+  viewOperations: [ROLES.SUPER_ADMIN, ROLES.INFRASTRUCTURE_ADMIN],
+  manageRetention: [ROLES.SUPER_ADMIN],
 };
 
 export function hasAnyRole(user, roles) {

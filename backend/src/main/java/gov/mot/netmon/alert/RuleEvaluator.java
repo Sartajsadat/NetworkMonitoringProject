@@ -64,6 +64,7 @@ public class RuleEvaluator {
             case FAILED_LOGINS -> logins(rule, ev);
             case CAPTURE_STORAGE_HIGH -> storage(rule, ev);
             case FIREWALL_DRIFT -> firewallDrift(rule, ev, serverNames);
+            case PLATFORM_DISK_LOW -> platformDisk(rule, ev);
         }
         return ev;
     }
@@ -296,6 +297,22 @@ public class RuleEvaluator {
                     }
                 });
     }
+
+    /** The platform's own capture disk (monitoring the monitor). */
+    private void platformDisk(AlertRule rule, Evaluation ev) {
+        Double pct = health == null ? null : health.captureDiskUsedPercent();
+        if (pct == null) return; // cannot be measured: neither open nor resolve
+        ev.checked.add(Evaluation.PLATFORM);
+        if (pct >= rule.getThreshold()) {
+            ev.fire(rule, new Hit(null, null, "capture-storage", pct, String.format(Locale.ROOT,
+                    "The platform's capture disk is %.1f%% full (threshold %.0f%%)", pct, rule.getThreshold())));
+        } else {
+            ev.value(rule, null, "capture-storage", pct);
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private gov.mot.netmon.ops.SystemHealthService health;
 
     static String minutes(int seconds) {
         return seconds < 120 ? seconds + " s" : (seconds / 60) + " min";

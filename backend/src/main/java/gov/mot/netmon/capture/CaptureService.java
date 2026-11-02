@@ -72,6 +72,8 @@ public class CaptureService {
     private final AuditService audit;
     private final Clock clock;
     private final AppProperties.Capture cfg;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private gov.mot.netmon.ops.RetentionPolicies retentionPolicies;
     private final Duration onlineThreshold;
     private final Map<String, Instant> lastViewAudit = new ConcurrentHashMap<>();
     private final Map<String, List<Long>> filterCache = Collections.synchronizedMap(new LinkedHashMap<>(16, 0.75f, true) {
@@ -106,7 +108,7 @@ public class CaptureService {
     @Transactional(readOnly = true)
     public Limits limits() {
         return new Limits(cfg.maxDurationSeconds(), cfg.maxBytesPerCapture(), cfg.defaultSnaplen(), cfg.defaultRetentionDays(),
-                cfg.maxRetentionDays(), cfg.quotaBytes(), captures.totalStoredBytes(), reservedBytes(), tshark.available());
+                maxRetentionDays(), cfg.quotaBytes(), captures.totalStoredBytes(), reservedBytes(), tshark.available());
     }
 
     @Transactional(readOnly = true)
@@ -180,8 +182,8 @@ public class CaptureService {
             throw ApiException.badRequest("SIZE_TOO_LARGE", "Maximum size may be at most " + allowedBytes / (1024 * 1024) + " MB");
         }
         int retention = req.retentionDays() == null ? cfg.defaultRetentionDays() : req.retentionDays();
-        if (retention > cfg.maxRetentionDays()) {
-            throw ApiException.badRequest("RETENTION_TOO_LONG", "Retention may be at most " + cfg.maxRetentionDays() + " days");
+        if (retention > maxRetentionDays()) {
+            throw ApiException.badRequest("RETENTION_TOO_LONG", "Retention may be at most " + maxRetentionDays() + " days");
         }
         if (captures.totalStoredBytes() + reservedBytes() + maxBytes > cfg.quotaBytes()) {
             throw new ApiException(HttpStatus.INSUFFICIENT_STORAGE, "CAPTURE_QUOTA_EXCEEDED",
@@ -375,6 +377,16 @@ public class CaptureService {
         if (c.getFilesDeletedAt() != null) throw ApiException.conflict("ALREADY_DELETED", "Files were already deleted");
         purge(c, "manual", reason);
         return view(c, servers.findById(c.getServerId()).orElse(null));
+    }
+
+    /** The lower of the deployment limit and the CAPTURES retention policy. */
+    int maxRetentionDays() {
+        if (retentionPolicies == null) return cfg.maxRetentionDays();
+        try {
+            return Math.min(cfg.maxRetentionDays(), retentionPolicies.days("CAPTURES"));
+        } catch (RuntimeException e) {
+            return cfg.maxRetentionDays();
+        }
     }
 
     /** Deletes files and packet metadata; the capture record itself stays as history. */
