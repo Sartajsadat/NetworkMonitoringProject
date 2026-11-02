@@ -24,10 +24,10 @@ export const NAV_SECTIONS = [
     items: [
       { to: '/analyzer', label: 'nav.packetAnalyzer', icon: 'diagram-3', roles: PERMISSIONS.viewCaptures },
       { to: '/captures', label: 'nav.captures', icon: 'record-circle', roles: PERMISSIONS.viewCaptures },
-      { label: 'nav.traffic', icon: 'arrow-left-right', phase: 6 },
-      { label: 'nav.ipAddresses', icon: 'geo', phase: 6 },
-      { label: 'nav.subnets', icon: 'diagram-2', phase: 6 },
-      { label: 'nav.networkDevices', icon: 'router', phase: 6 },
+      { to: '/traffic', label: 'nav.traffic', icon: 'arrow-left-right', roles: PERMISSIONS.viewTraffic },
+      { to: '/ip-addresses', label: 'nav.ipAddresses', icon: 'geo' },
+      { to: '/subnets', label: 'nav.subnets', icon: 'diagram-2' },
+      { to: '/network-devices', label: 'nav.networkDevices', icon: 'router' },
     ],
   },
   {

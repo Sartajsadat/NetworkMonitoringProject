@@ -81,6 +81,8 @@ export function eventSummary(e, i18n) {
       resolution: d.by ? (d.resolution || '') : t('alert.resolution.AUTO'),
     }; break;
     case 'EVENTS_SUPPRESSED': vars = { n: formatNumber(d.limit) }; break;
+    case 'IP_MAC_CHANGED': vars = { ip: d.address, oldMac: d.oldMac, newMac: d.newMac }; break;
+    case 'NEW_ADDRESS_SEEN': vars = { ip: d.address, mac: d.mac || '—' }; break;
     default:
       if (d.ruleType) {
         const unit = d.unit;

@@ -112,3 +112,24 @@ export const alertApi = {
   updateRule: (id, body) => api.put(`/alert-rules/${id}`, body).then((r) => r.data),
   deleteRule: (id) => api.delete(`/alert-rules/${id}`),
 };
+
+// IP inventory and traffic (Phase 6)
+export const networkApi = {
+  subnets: () => api.get('/subnets').then((r) => r.data),
+  createSubnet: (body) => api.post('/subnets', body).then((r) => r.data),
+  updateSubnet: (id, body) => api.put(`/subnets/${id}`, body).then((r) => r.data),
+  deleteSubnet: (id) => api.delete(`/subnets/${id}`),
+  ips: (params) => api.get('/ip-addresses', { params }).then((r) => r.data),
+  ip: (id) => api.get(`/ip-addresses/${id}`).then((r) => r.data),
+  createIp: (body) => api.post('/ip-addresses', body).then((r) => r.data),
+  updateIp: (id, body) => api.put(`/ip-addresses/${id}`, body).then((r) => r.data),
+  deleteIp: (id) => api.delete(`/ip-addresses/${id}`),
+  importIps: (csv) => api.post('/ip-addresses/import', csv, { headers: { 'Content-Type': 'text/plain' } }).then((r) => r.data),
+  devices: () => api.get('/network-devices').then((r) => r.data),
+  createDevice: (body) => api.post('/network-devices', body).then((r) => r.data),
+  updateDevice: (id, body) => api.put(`/network-devices/${id}`, body).then((r) => r.data),
+  deleteDevice: (id) => api.delete(`/network-devices/${id}`),
+  flowSummary: (params) => api.get('/network-flows/summary', { params }).then((r) => r.data),
+  flows: (params) => api.get('/network-flows', { params }).then((r) => r.data),
+  collector: () => api.get('/network-flows/collector').then((r) => r.data),
+};

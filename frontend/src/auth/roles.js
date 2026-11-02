@@ -25,6 +25,9 @@ export const PERMISSIONS = {
   operateAlerts: [ROLES.SUPER_ADMIN, ROLES.INFRASTRUCTURE_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
   manageAlertRules: [ROLES.SUPER_ADMIN, ROLES.INFRASTRUCTURE_ADMIN],
   viewSecurityEvents: [ROLES.SUPER_ADMIN, ROLES.SECURITY_ANALYST],
+  // IP inventory: everyone reads; network and super administrators change. Flow data like captures.
+  manageNetwork: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN],
+  viewTraffic: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
 };
 
 export function hasAnyRole(user, roles) {

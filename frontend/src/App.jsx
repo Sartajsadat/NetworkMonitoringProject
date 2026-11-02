@@ -27,6 +27,11 @@ import EventDetailPage from './pages/events/EventDetailPage.jsx';
 import AlertsPage from './pages/alerts/AlertsPage.jsx';
 import AlertDetailPage from './pages/alerts/AlertDetailPage.jsx';
 import AlertRulesPage from './pages/alerts/AlertRulesPage.jsx';
+import SubnetsPage from './pages/network/SubnetsPage.jsx';
+import IpAddressesPage from './pages/network/IpAddressesPage.jsx';
+import IpDetailPage from './pages/network/IpDetailPage.jsx';
+import DevicesPage from './pages/network/DevicesPage.jsx';
+import TrafficPage from './pages/network/TrafficPage.jsx';
 
 export default function App() {
   return (
@@ -66,6 +71,11 @@ export default function App() {
         <Route path="alerts" element={<AlertsPage />} />
         <Route path="alerts/rules" element={<AlertRulesPage />} />
         <Route path="alerts/:id" element={<AlertDetailPage />} />
+        <Route path="subnets" element={<SubnetsPage />} />
+        <Route path="ip-addresses" element={<IpAddressesPage />} />
+        <Route path="ip-addresses/:id" element={<IpDetailPage />} />
+        <Route path="network-devices" element={<DevicesPage />} />
+        <Route path="traffic" element={<ProtectedRoute roles={PERMISSIONS.viewTraffic}><TrafficPage /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute roles={[ROLES.SUPER_ADMIN]}><UsersPage /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute roles={PERMISSIONS.viewAudit}><AuditLogPage /></ProtectedRoute>} />
         <Route path="account/password" element={<ChangePasswordPage />} />
