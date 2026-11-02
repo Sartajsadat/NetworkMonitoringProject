@@ -24,7 +24,8 @@ public record Report(
         List<ProcessInfo> processes,
         List<CollectorStatus> collectors,
         Capture capture,
-        List<Neighbor> neighbors) {
+        List<Neighbor> neighbors,
+        Firewall firewall) {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Host(String hostname, String platform, String osName, String osVersion, String kernel,
@@ -76,6 +77,15 @@ public record Report(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record CaptureInterface(String name, String description) {
+    }
+
+    /**
+     * Firewall control on this server (Phase 7). Off unless enabled locally; enforcement needs a
+     * second local switch. ruleTags lists the NetMon rules present in the firewall right now.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Firewall(boolean enabled, boolean enforcementAllowed, String backend, String message,
+            List<String> protectedAddresses, List<String> ruleTags) {
     }
 
     /** Neighbour (ARP) table entry: an address on a local network and its MAC (Phase 6). */

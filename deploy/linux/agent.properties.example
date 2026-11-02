@@ -32,3 +32,21 @@ capture.dumpcap-path=/usr/bin/dumpcap
 # Pieces wait here until uploaded (then deleted). Capture stops if free space drops below the minimum.
 #capture.spool-dir=/var/lib/netmon-agent/captures
 capture.min-free-disk-megabytes=512
+
+# --- Firewall control (Phase 7). OFF unless enabled here by this server's administrator. ---
+# Use deploy/linux/enable-firewall.sh: it also gives the agent the permission it needs.
+# firewall.enabled=true      the agent reports the firewall and CHECKS approved rules (dry run).
+# firewall.enforcement=true  the agent may also really change the firewall. Leave false until the
+#                            integration was tested in a lab and an administrator approved it.
+firewall.enabled=false
+firewall.enforcement=false
+# auto = UFW if UFW is enabled, otherwise nftables (own table "inet netmon"); firewalld is not supported.
+firewall.backend=auto
+firewall.nft-path=/usr/sbin/nft
+firewall.ufw-path=/usr/sbin/ufw
+firewall.sudo-path=/usr/bin/sudo
+# Addresses that must never be blocked here, besides loopback and the platform (comma separated CIDRs),
+# e.g. the jump host and the monitoring network.
+firewall.protected-addresses=
+# Connections to these local ports are never cut: their remote addresses are protected while connected.
+firewall.management-ports=22,3389,5985,5986

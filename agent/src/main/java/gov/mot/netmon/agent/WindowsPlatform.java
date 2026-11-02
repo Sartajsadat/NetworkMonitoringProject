@@ -28,6 +28,11 @@ import gov.mot.netmon.agent.windows.WindowsQueryCollector;
 public final class WindowsPlatform implements Platform {
 
     @Override
+    public gov.mot.netmon.agent.firewall.FirewallBackend firewall(AgentSettings s) {
+        return gov.mot.netmon.agent.firewall.FirewallDetector.windows(s.powershell());
+    }
+
+    @Override
     public String name() {
         return "WINDOWS";
     }

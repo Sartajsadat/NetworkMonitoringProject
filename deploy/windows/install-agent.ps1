@@ -23,6 +23,12 @@
   and the Npcap driver installed WITHOUT "Restrict Npcap driver's access to Administrators only"
   (otherwise LocalService cannot capture). -CaptureInterfaces limits capture to the listed adapters
   (names as shown by dumpcap -D in brackets, e.g. Ethernet0); empty = every real adapter.
+
+  Firewall control (Phase 7) is OFF unless -EnableFirewall is given. Changing Windows Defender
+  Firewall needs administrative rights, so with -EnableFirewall the service runs as LocalSystem
+  instead of LocalService. Without -FirewallEnforce the agent only reports the firewall and checks
+  approved rules with -WhatIf (dry run). -FirewallProtect lists addresses that must never be blocked.
+  Recovery (removes every NetMon rule): Remove-NetFirewallRule -Group NetMon
 #>
 [CmdletBinding()]
 param(
@@ -37,7 +43,10 @@ param(
     [switch] $EnableCapture,
     [string] $CaptureInterfaces = '',
     [ValidateRange(1, 1440)] [int] $CaptureMaxMinutes = 60,
-    [ValidateRange(1, 102400)] [int] $CaptureMaxMegabytes = 1024
+    [ValidateRange(1, 102400)] [int] $CaptureMaxMegabytes = 1024,
+    [switch] $EnableFirewall,
+    [switch] $FirewallEnforce,
+    [string] $FirewallProtect = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -149,6 +158,19 @@ if ($EnableCapture) {
     Set-Content -LiteralPath $ConfigFile -Value $lines -Encoding Ascii
 }
 
+if ($EnableFirewall) {
+    Step ('Enabling firewall control (' + $(if ($FirewallEnforce) { 'ENFORCEMENT ALLOWED' } else { 'dry run only' }) + ')')
+    if ($FirewallProtect -notmatch '^[0-9A-Fa-f:./,]*$') { throw "Invalid -FirewallProtect value" }
+    $fwProps = [ordered]@{
+        'firewall.enabled'             = 'true'
+        'firewall.enforcement'         = $(if ($FirewallEnforce) { 'true' } else { 'false' })
+        'firewall.protected-addresses' = $FirewallProtect
+    }
+    $lines = @(Get-Content -LiteralPath $ConfigFile | Where-Object { $_ -notmatch '^firewall\.(enabled|enforcement|protected-addresses)=' })
+    foreach ($k in $fwProps.Keys) { $lines += "$k=$($fwProps[$k])" }
+    Set-Content -LiteralPath $ConfigFile -Value $lines -Encoding Ascii
+}
+
 # --- enrollment ----------------------------------------------------------------
 Step 'Enrolling with the platform'
 & $JavaPath -jar (Join-Path $InstallDir 'netmon-agent.jar') enroll --config $ConfigFile --token $Token
@@ -202,9 +224,16 @@ if (-not (Get-Service -Name $ServiceId -ErrorAction SilentlyContinue)) {
     & $exe install
     if ($LASTEXITCODE -ne 0) { throw 'WinSW could not install the service.' }
 }
-# Run as LOCAL SERVICE (least privilege) instead of the default LocalSystem.
-& sc.exe config $ServiceId obj= 'NT AUTHORITY\LocalService' password= '' | Out-Null
-if ($LASTEXITCODE -ne 0) { throw 'Could not set the service account to LOCAL SERVICE.' }
+if ($EnableFirewall) {
+    # Windows Defender Firewall can only be changed by an administrator account.
+    & sc.exe config $ServiceId obj= 'LocalSystem' | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Could not set the service account to LocalSystem.' }
+    Write-Warning 'The agent runs as LocalSystem because firewall control is enabled.'
+} else {
+    # Run as LOCAL SERVICE (least privilege) instead of the default LocalSystem.
+    & sc.exe config $ServiceId obj= 'NT AUTHORITY\LocalService' password= '' | Out-Null
+    if ($LASTEXITCODE -ne 0) { throw 'Could not set the service account to LOCAL SERVICE.' }
+}
 
 Step 'Starting the service'
 Start-Service -Name $ServiceId

@@ -23,6 +23,16 @@ import gov.mot.netmon.agent.model.Report;
 public final class LinuxPlatform implements Platform {
 
     @Override
+    public gov.mot.netmon.agent.firewall.FirewallBackend firewall(AgentSettings s) {
+        return gov.mot.netmon.agent.firewall.FirewallDetector.linux(s.firewall(), s.etcRoot(), s.stateDir().resolve("firewall-tmp"));
+    }
+
+    @Override
+    public List<String> managementSessions(AgentSettings s) {
+        return gov.mot.netmon.agent.firewall.LocalSafety.linuxSessions(s.procRoot(), s.firewall().managementPorts());
+    }
+
+    @Override
     public String name() {
         return "LINUX";
     }

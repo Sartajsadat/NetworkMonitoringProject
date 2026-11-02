@@ -82,6 +82,13 @@ public class CaptureManager {
         return settings.enabled();
     }
 
+    /** Firewall tasks arrive through the same task poll; they are handed over to the firewall manager. */
+    private volatile java.util.function.Consumer<JsonNode> firewallTasks;
+
+    public void setFirewallTasks(java.util.function.Consumer<JsonNode> c) {
+        this.firewallTasks = c;
+    }
+
     public boolean busy() {
         return active != null;
     }
@@ -171,6 +178,11 @@ public class CaptureManager {
         if (res.outcome() != Outcome.OK || res.body() == null) return;
         for (JsonNode t : res.body().path("tasks")) {
             String type = t.path("type").asText("");
+            if (type.endsWith("_FIREWALL_RULE")) {
+                java.util.function.Consumer<JsonNode> fw = firewallTasks;
+                if (fw != null) fw.accept(t);
+                continue;
+            }
             UUID id;
             try {
                 id = UUID.fromString(t.path("captureId").asText());

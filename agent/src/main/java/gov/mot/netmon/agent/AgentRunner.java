@@ -76,9 +76,16 @@ public class AgentRunner {
         this.captureStatus = s;
     }
 
+    private volatile java.util.function.Supplier<Report.Firewall> firewallStatus = () -> null;
+
+    public void setFirewallStatus(java.util.function.Supplier<Report.Firewall> s) {
+        this.firewallStatus = s;
+    }
+
     private Report build(Instant now) {
         var b = collectors.run(now);
         b.capture = captureStatus.get();
+        b.firewall = firewallStatus.get();
         return b.build(AgentInfo.VERSION, now, config.get().reportIntervalSeconds());
     }
 

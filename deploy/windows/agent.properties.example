@@ -22,3 +22,14 @@ capture.max-duration-seconds=3600
 capture.max-megabytes=1024
 capture.dumpcap-path=C:/Program Files/Wireshark/dumpcap.exe
 capture.min-free-disk-megabytes=512
+
+# --- Firewall control (Phase 7). OFF unless enabled here by this server's administrator. ---
+# Needs the agent service to run as LocalSystem (install-agent.ps1 -EnableFirewall).
+# firewall.enabled=true      the agent reports Windows Defender Firewall and CHECKS approved rules (-WhatIf).
+# firewall.enforcement=true  the agent may also create rules (group "NetMon"). Leave false until the
+#                            integration was tested in a lab and an administrator approved it.
+firewall.enabled=false
+firewall.enforcement=false
+# Addresses that must never be blocked here, besides loopback and the platform (comma separated CIDRs).
+firewall.protected-addresses=
+firewall.management-ports=22,3389,5985,5986

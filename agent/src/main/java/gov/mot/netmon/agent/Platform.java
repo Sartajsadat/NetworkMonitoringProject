@@ -21,6 +21,14 @@ public interface Platform {
     /** Host facts sent with the enrollment request. */
     Report.Host hostInfo(AgentSettings settings) throws Exception;
 
+    /** The local firewall manager NetMon would use (detected; nothing is changed). */
+    gov.mot.netmon.agent.firewall.FirewallBackend firewall(AgentSettings settings);
+
+    /** Addresses connected to local management ports right now (never blocked). */
+    default List<String> managementSessions(AgentSettings settings) {
+        return List.of();
+    }
+
     /** Hashed machine identifier (never the raw id), or null. */
     String machineIdHash(AgentSettings settings);
 

@@ -17,6 +17,7 @@ import java.util.logging.SimpleFormatter;
 
 import gov.mot.netmon.agent.capture.CaptureManager;
 import gov.mot.netmon.agent.capture.Dumpcap;
+import gov.mot.netmon.agent.firewall.FirewallManager;
 import gov.mot.netmon.agent.collect.CollectorRunner;
 import gov.mot.netmon.agent.config.AgentSettings;
 import gov.mot.netmon.agent.config.CredentialStore;
@@ -33,6 +34,7 @@ import gov.mot.netmon.agent.transport.PlatformClient;
  *   netmon-agent run    [--config FILE]
  *   netmon-agent collect-once [--config FILE]     (prints one report locally, sends nothing)
  *   netmon-agent capture-check [--config FILE]    (shows whether packet capture can work here)
+ *   netmon-agent firewall-check [--config FILE]   (shows the firewall NetMon would use; changes nothing)
  *   netmon-agent version
  * </pre>
  */
@@ -67,6 +69,7 @@ public final class AgentMain {
             case "run" -> run(platform, settings);
             case "collect-once" -> collectOnce(platform, settings);
             case "capture-check" -> captureCheck(settings);
+            case "firewall-check" -> firewallCheck(platform, settings);
             default -> {
                 usage();
                 System.exit(2);
@@ -123,6 +126,23 @@ public final class AgentMain {
         CaptureManager capture = new CaptureManager(settings.capture(), new Dumpcap(settings.capture().dumpcap()), client,
                 runner::authorization, Clock.systemUTC());
         runner.setCaptureStatus(capture::capability);
+        final AgentSettings fs = settings;
+        FirewallManager firewall = new FirewallManager(settings.firewall(), () -> platform.firewall(fs), client,
+                runner::authorization, Clock.systemUTC(), FirewallManager.resolve(settings.platformUrl().getHost()),
+                () -> platform.managementSessions(fs));
+        runner.setFirewallStatus(firewall::capability);
+        capture.setFirewallTasks(firewall::offer);
+        firewall.setSelfPoll(!capture.enabled());
+        if (firewall.enabled() || capture.enabled()) {
+            // Without capture this thread also collects tasks, so a disabled firewall still answers (FAILED) quickly.
+            Thread ft = new Thread(firewall::runForever, "netmon-firewall");
+            ft.setDaemon(true);
+            ft.start();
+        }
+        if (firewall.enabled()) {
+            Report.Firewall f = firewall.capability();
+            Logger.getLogger(AgentMain.class.getName()).info("Firewall control enabled: " + f.backend() + " - " + f.message());
+        }
         if (capture.enabled()) {
             Thread t = new Thread(capture::runForever, "netmon-capture");
             t.setDaemon(true);
@@ -135,6 +155,7 @@ public final class AgentMain {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             runner.stop();
             capture.stop();
+            firewall.stop();
         }));
         runner.runForever();
     }
@@ -155,6 +176,16 @@ public final class AgentMain {
         if (!m.capability().available()) System.exit(1);
     }
 
+    /** Shows which firewall would be used and whether enforcement is possible. Changes nothing. */
+    private static void firewallCheck(Platform platform, AgentSettings settings) throws Exception {
+        String host = settings.platformUrl() == null ? null : settings.platformUrl().getHost();
+        FirewallManager m = new FirewallManager(settings.firewall(), () -> platform.firewall(settings), null, () -> null,
+                Clock.systemUTC(), host == null ? List.of() : FirewallManager.resolve(host), () -> platform.managementSessions(settings));
+        System.out.println(Json.MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(m.capability()));
+        System.out.println("Management sessions that will never be blocked: " + platform.managementSessions(settings));
+        if (!m.capability().enabled()) System.exit(1);
+    }
+
     static Map<String, String> options(String[] argv) {
         Map<String, String> m = new HashMap<>();
         for (int i = 1; i < argv.length; i++) {
@@ -172,6 +203,7 @@ public final class AgentMain {
                   netmon-agent run [--config FILE]
                   netmon-agent collect-once [--config FILE]
                   netmon-agent capture-check [--config FILE]
+                  netmon-agent firewall-check [--config FILE]
                   netmon-agent version""");
     }
 
