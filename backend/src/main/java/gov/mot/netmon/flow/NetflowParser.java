@@ -21,7 +21,7 @@ public class NetflowParser {
     static final int OCTETS = 1, PACKETS = 2, PROTOCOL = 4, TCP_FLAGS = 6, SRC_PORT = 7, SRC_V4 = 8, INPUT_IF = 10,
             DST_PORT = 11, DST_V4 = 12, OUTPUT_IF = 14, LAST_UPTIME = 21, FIRST_UPTIME = 22, SRC_V6 = 27, DST_V6 = 28,
             SAMPLING_INTERVAL = 34, OCTETS_TOTAL = 85, PACKETS_TOTAL = 86, START_SEC = 150, END_SEC = 151, START_MS = 152,
-            END_MS = 153, SYS_INIT_MS = 160, SAMPLING_PACKET_INTERVAL = 305;
+            END_MS = 153, SYS_INIT_MS = 160, SAMPLING_PACKET_INTERVAL = 305, SAMPLING_PACKET_SPACE = 306;
 
     public static class ParseException extends Exception {
         public ParseException(String m) {
@@ -41,6 +41,17 @@ public class NetflowParser {
     private final Map<String, Template> templates = new ConcurrentHashMap<>();
     /** Sampling interval announced in v9/IPFIX options data, per exporter and domain. */
     private final Map<String, Integer> samplingByDomain = new ConcurrentHashMap<>();
+    /** IPFIX systemInitTimeMilliseconds from options data: base for flowStart/EndSysUpTime. */
+    private final Map<String, Long> sysInitByDomain = new ConcurrentHashMap<>();
+
+    /**
+     * Milliseconds between two 32-bit uptime values. Uptime counters wrap every 49.7 days, and some
+     * exporters report flows that started before their own uptime base; signed 32-bit arithmetic
+     * handles both.
+     */
+    static long uptimeDelta(long later, long earlier) {
+        return (int) (later - earlier);
+    }
 
     public Result parse(String exporter, byte[] data, int length, Instant receivedAt) throws ParseException {
         if (length < 4) throw new ParseException("packet too short");
@@ -81,8 +92,8 @@ public class NetflowParser {
             int dport = b.getShort(o + 34) & 0xffff;
             int flags = b.get(o + 37) & 0xff;
             int proto = b.get(o + 38) & 0xff;
-            Instant start = Instant.ofEpochMilli(exportMs - (uptime - first));
-            Instant end = Instant.ofEpochMilli(exportMs - (uptime - last));
+            Instant start = Instant.ofEpochMilli(exportMs - uptimeDelta(uptime, first));
+            Instant end = Instant.ofEpochMilli(exportMs - uptimeDelta(uptime, last));
             out.add(new FlowRecord(start, end, src, dst, ports(proto) ? sport : null, ports(proto) ? dport : null, proto, octets,
                     pkts, proto == 6 ? flags : null, in, outIf, sampling, 5));
         }
@@ -247,9 +258,18 @@ public class NetflowParser {
                 }
                 q += len;
             }
-            if (t.scopeCount() > 0) { // options record: only the sampling interval is of interest
-                long s = has[SAMPLING_INTERVAL] ? v[SAMPLING_INTERVAL] : has[SAMPLING_PACKET_INTERVAL] ? v[SAMPLING_PACKET_INTERVAL] : 0;
+            if (t.scopeCount() > 0) { // options record: sampling and the uptime base are of interest
+                long s = 0;
+                if (has[SAMPLING_INTERVAL]) {
+                    s = v[SAMPLING_INTERVAL];
+                } else if (has[SAMPLING_PACKET_INTERVAL] && v[SAMPLING_PACKET_INTERVAL] > 0) {
+                    // RFC 5476: select "interval" packets, then skip "space" packets
+                    long space = has[SAMPLING_PACKET_SPACE] ? v[SAMPLING_PACKET_SPACE] : 0;
+                    s = has[SAMPLING_PACKET_SPACE] ? Math.round((v[SAMPLING_PACKET_INTERVAL] + space) / (double) v[SAMPLING_PACKET_INTERVAL])
+                            : v[SAMPLING_PACKET_INTERVAL];
+                }
                 if (s > 0 && s < Integer.MAX_VALUE) samplingByDomain.put(domain, (int) s);
+                if (has[SYS_INIT_MS] && v[SYS_INIT_MS] > 0) sysInitByDomain.put(domain, v[SYS_INIT_MS]);
                 continue;
             }
             if (src == null || dst == null) continue; // not an IP flow (e.g. layer-2 only)
@@ -263,10 +283,13 @@ public class NetflowParser {
             } else if (has[START_SEC] && has[END_SEC]) {
                 startT = Instant.ofEpochSecond(v[START_SEC]);
                 endT = Instant.ofEpochSecond(v[END_SEC]);
-            } else if (has[FIRST_UPTIME] && has[LAST_UPTIME] && (uptime >= 0 || has[SYS_INIT_MS])) {
-                long base = uptime >= 0 ? exportMs - uptime : v[SYS_INIT_MS];
-                startT = Instant.ofEpochMilli(base + v[FIRST_UPTIME]);
-                endT = Instant.ofEpochMilli(base + v[LAST_UPTIME]);
+            } else if (has[FIRST_UPTIME] && has[LAST_UPTIME] && uptime >= 0) { // v9: relative to the header uptime
+                startT = Instant.ofEpochMilli(exportMs - uptimeDelta(uptime, v[FIRST_UPTIME]));
+                endT = Instant.ofEpochMilli(exportMs - uptimeDelta(uptime, v[LAST_UPTIME]));
+            } else if (has[FIRST_UPTIME] && has[LAST_UPTIME] && (has[SYS_INIT_MS] || sysInitByDomain.containsKey(domain))) {
+                long base = has[SYS_INIT_MS] ? v[SYS_INIT_MS] : sysInitByDomain.get(domain); // IPFIX
+                startT = Instant.ofEpochMilli(sinceInit(base, v[FIRST_UPTIME], exportMs));
+                endT = Instant.ofEpochMilli(sinceInit(base, v[LAST_UPTIME], exportMs));
             } else {
                 startT = Instant.ofEpochMilli(exportMs);
                 endT = startT;
@@ -280,6 +303,20 @@ public class NetflowParser {
                     has[INPUT_IF] ? (int) v[INPUT_IF] : null, has[OUTPUT_IF] ? (int) v[OUTPUT_IF] : null,
                     sampling == null ? 1 : sampling, version));
         }
+    }
+
+    /**
+     * Absolute time of a 32-bit "milliseconds since system init" value. Read unsigned (normal for a
+     * long-running device) unless that lands in the future, in which case the exporter reported a
+     * time before its own init and the value is read as signed (seen with softflowd).
+     */
+    static long sinceInit(long base, long offset, long exportMs) {
+        long unsigned = base + offset;
+        long signed = base + (int) offset;
+        boolean unsignedOk = unsigned <= exportMs + 60_000;
+        boolean signedOk = signed <= exportMs + 60_000;
+        if (unsignedOk && signedOk) return Math.abs(exportMs - unsigned) <= Math.abs(exportMs - signed) ? unsigned : signed;
+        return unsignedOk || !signedOk ? unsigned : signed;
     }
 
     private static boolean ports(int proto) {

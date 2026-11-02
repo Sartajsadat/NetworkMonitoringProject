@@ -31,6 +31,19 @@ class NetflowParserTest {
     }
 
     @Test
+    void handlesUptimeCounterWrapAfter497Days() throws Exception {
+        byte[] p = Packets.v5(now.getEpochSecond(), "10.1.1.5", 1, "10.2.2.9", 2, 1, 1, 0);
+        java.nio.ByteBuffer b = java.nio.ByteBuffer.wrap(p);
+        b.putInt(4, 5_000);                      // uptime wrapped: 5 s after the 32-bit counter rolled over
+        b.putInt(24 + 24, (int) 4_294_957_296L); // flow first seen 10 s before the wrap
+        b.putInt(24 + 28, 2_000);                // and last seen 3 s before export
+        FlowRecord f = parser.parse("192.0.2.1", p, p.length, now).flows().get(0);
+        assertThat(f.start()).isEqualTo(now.minusSeconds(15));
+        assertThat(f.end()).isEqualTo(now.minusSeconds(3));
+        assertThat(NetflowParser.sinceInit(0, 4_000_000_000L, 5_000_000_000L)).isEqualTo(4_000_000_000L); // long-running device
+    }
+
+    @Test
     void v9DataBeforeItsTemplateIsSkippedThenDecoded() throws Exception {
         byte[] early = Packets.v9(false, now.getEpochSecond(), "10.0.0.1", "10.0.0.2", 5353, 53, 777);
         NetflowParser.Result r1 = parser.parse("192.0.2.1", early, early.length, now);
