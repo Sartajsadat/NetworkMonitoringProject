@@ -86,7 +86,6 @@ class NetworkInventoryTest extends AgentTestSupport {
                 .content(toJson(Map.of("name", "web-01", "hostname", "web-01.mot.local", "osFamily", "LINUX", "environment",
                         "TESTING", "organization", "Ministry IT", "ipAddresses", List.of(Map.of("address", "10.0.0.50"))))))
                 .andExpect(status().isOk());
-        sync.sync();
         JsonNode reg = ips(viewer, "q=10.0.0.50").get("content").get(0);
         assertThat(reg.get("serverName").asText()).isEqualTo("web-01");
         assertThat(reg.get("seen").asText()).isEqualTo("NEVER_SEEN"); // registered is not the same as seen

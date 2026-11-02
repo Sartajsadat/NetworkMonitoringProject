@@ -53,11 +53,18 @@ services:
       EVENTS_MAX_PER_SERVER_PER_HOUR: ${EVENTS_MAX_PER_SERVER_PER_HOUR:-600}
       ALERT_EVALUATION_INTERVAL: ${ALERT_EVALUATION_INTERVAL:-PT1M}
       ALERTS_RESOLVED_RETENTION: ${ALERTS_RESOLVED_RETENTION:-P365D}
+      FLOW_COLLECTOR_ENABLED: ${FLOW_COLLECTOR_ENABLED:-false}
+      FLOW_MAX_PER_SECOND: ${FLOW_MAX_PER_SECOND:-20000}
+      FLOWS_RETENTION: ${FLOWS_RETENTION:-P14D}
       TZ: UTC
     volumes:
       # Packet capture files (PCAPNG). Size is limited by CAPTURE_STORAGE_QUOTA_BYTES.
       - capture-data:/var/lib/netmon/captures
-    # No host port: reached only through the frontend's reverse proxy.
+    # The API has no host port (reached through the frontend's reverse proxy). Only the flow
+    # collector's UDP ports are published, on FLOW_BIND (set it to the management-network address).
+    ports:
+      - "${FLOW_BIND:-127.0.0.1}:${FLOW_NETFLOW_PORT:-2055}:2055/udp"
+      - "${FLOW_BIND:-127.0.0.1}:${FLOW_IPFIX_PORT:-4739}:4739/udp"
 
   frontend:
     build: ./frontend

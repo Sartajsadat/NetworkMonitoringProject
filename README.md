@@ -3,18 +3,19 @@
 Central platform for the Ministry of Telecommunication to monitor ministry-hosted servers,
 analyse network traffic, investigate incidents and (later) manage IP access rules.
 
-> **Status: Phase 5 of 9 done (event timeline and alerts).** Done so far:
+> **Status: Phase 6 of 9 done (IP inventory and traffic analysis).** Done so far:
 > - authentication, users, server inventory and the audit log;
 > - English/Pashto/Dari UI;
 > - monitoring agents for Linux and Windows (live and historical CPU, memory, disk, network,
 >   service and process data);
 > - packet capture with dumpcap on the servers and analysis with TShark on the platform;
 > - an event timeline (service changes, restarts, disconnections, captures, security events) and
->   configurable alert rules with acknowledgement.
+>   configurable alert rules with acknowledgement;
+> - subnets, an IP address inventory, network devices, and NetFlow v5/v9 / IPFIX traffic analysis.
 >
 > The Windows agent and Windows capture still need a test on a real Windows server: see
 > docs/PHASE-3.md and docs/PHASE-4.md. Centralized logs and the hosted-application inventory
-> (marked "Phase 5b"), IP inventory and firewall control arrive later and are shown in the UI as
+> (marked "Phase 5b") and firewall control arrive later and are shown in the UI as
 > *not available yet*, never with placeholder numbers.
 
 | Document | Contents |
@@ -29,6 +30,8 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 | [docs/PHASE-4.md](docs/PHASE-4.md) | Packet analyzer: how capture and analysis work, Windows test checklist |
 | [docs/PACKET-CAPTURE.md](docs/PACKET-CAPTURE.md) | Enabling capture, visibility levels, filters, roles, troubleshooting |
 | [docs/PHASE-5.md](docs/PHASE-5.md) | Event timeline, correlation, alert rules, acknowledgement, data gaps |
+| [docs/PHASE-6.md](docs/PHASE-6.md) | Subnets, IP inventory, network devices, flow collector, traffic pages |
+| [docs/NETWORK-VISIBILITY.md](docs/NETWORK-VISIBILITY.md) | Host vs mirror-port vs flow visibility; sending NetFlow/IPFIX from routers and firewalls |
 | [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 
 ## Stack
@@ -208,6 +211,9 @@ All configuration comes from the environment; see [.env.example](.env.example).
 | `EVENTS_RETENTION` / `ALERTS_RESOLVED_RETENTION` | no | `P180D` / `P365D` | How long timeline events and resolved alerts are kept |
 | `EVENTS_MAX_PER_SERVER_PER_HOUR` | no | `600` | Flood protection for the timeline |
 | `ALERT_EVALUATION_INTERVAL` | no | `PT1M` | How often alert rules are evaluated |
+| `FLOW_COLLECTOR_ENABLED` | no | `false` | Receive NetFlow v5/v9 and IPFIX from registered network devices |
+| `FLOW_BIND` / `FLOW_NETFLOW_PORT` / `FLOW_IPFIX_PORT` | no | `127.0.0.1` / `2055` / `4739` | Where compose publishes the collector's UDP ports (use the management-network address) |
+| `FLOW_MAX_PER_SECOND` / `FLOWS_RETENTION` | no | `20000` / `P14D` | Per-exporter rate limit; how long flow records are kept |
 | `HTTP_BIND` / `HTTP_PORT` | no | `127.0.0.1` / `8088` | Where compose publishes the UI |
 
 ## Repository layout

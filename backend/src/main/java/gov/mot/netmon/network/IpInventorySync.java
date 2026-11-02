@@ -31,6 +31,27 @@ public class IpInventorySync {
         sync();
     }
 
+    /** Registered server addresses appear in the inventory as soon as a server is saved. */
+    @EventListener
+    public void onAudit(gov.mot.netmon.audit.AuditService.AuditRecorded recorded) {
+        String action = recorded.entry().getAction();
+        if (("SERVER_REGISTERED".equals(action) || "SERVER_UPDATED".equals(action))
+                && recorded.entry().getResult() == gov.mot.netmon.audit.AuditResult.SUCCESS) {
+            org.springframework.transaction.support.TransactionSynchronization after =
+                    new org.springframework.transaction.support.TransactionSynchronization() {
+                        @Override
+                        public void afterCommit() {
+                            sync();
+                        }
+                    };
+            if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+                org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(after);
+            } else {
+                sync();
+            }
+        }
+    }
+
     @Scheduled(fixedDelayString = "PT5M", initialDelayString = "PT5M")
     public void sync() {
         List<Observation> list = new ArrayList<>();

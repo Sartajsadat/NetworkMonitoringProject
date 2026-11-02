@@ -88,6 +88,12 @@ is reported in the `swap…` fields; disk `mount` is the drive (`C:\`); `diskIo.
 disk instance (`0_C:`); interface names may contain spaces and brackets; process `user` is absent;
 service `loadState` is the start mode (Auto/Manual/Disabled) and `activeState` the Windows state.
 
+## Neighbour table (Phase 6, agent 0.5.0)
+
+Reports may include `"neighbors": [ { "ip": "10.0.0.1", "mac": "00:11:22:33:44:55", "interfaceName": "eth0", "state": "REACHABLE" } ]`
+(at most 512). Linux reads `/proc/net/arp` (complete IPv4 entries); Windows uses `Get-NetNeighbor`
+(IPv4 and IPv6). The platform uses them for the IP inventory and to flag MAC changes.
+
 ## Packet capture (Phase 4)
 
 Capture is **off** unless the server's administrator sets `capture.enabled=true` on that server.
