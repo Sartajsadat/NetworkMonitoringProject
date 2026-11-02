@@ -61,7 +61,7 @@ public abstract class IntegrationTest {
     void cleanDatabase() {
         captureIndexer.awaitIdle(); // background indexing from the previous test must not race the cleanup
         // audit_logs is append-only by design and is intentionally not cleaned.
-        jdbc.execute("TRUNCATE events, alerts, alert_rules, packet_summaries, capture_segments, agent_tasks, packet_captures, metric_rollups_5m, metric_samples, server_snapshots, server_agent_configs, "
+        jdbc.execute("TRUNCATE network_flows, ip_addresses, subnets, network_devices, events, alerts, alert_rules, packet_summaries, capture_segments, agent_tasks, packet_captures, metric_rollups_5m, metric_samples, server_snapshots, server_agent_configs, "
                 + "agent_enrollment_tokens, agents, server_group_members, server_ip_addresses, servers, server_groups, "
                 + "refresh_tokens, user_roles, users, system_settings");
         loginRateLimiter.reset();

@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /** Strongly typed view of the {@code app.*} configuration (all values come from the environment). */
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(Security security, Bootstrap bootstrap, Monitoring monitoring, Agents agents, Capture capture, Events events,
-        Alerts alerts) {
+        Alerts alerts, Flows flows) {
 
     public record Security(
             String jwtSecret,
@@ -75,5 +75,15 @@ public record AppProperties(Security security, Bootstrap bootstrap, Monitoring m
      * @param resolvedRetention  resolved alerts older than this are deleted
      */
     public record Alerts(Duration evaluationInterval, Duration resolvedRetention) {
+    }
+
+    /**
+     * NetFlow/IPFIX collector. Off by default; flows are accepted only from registered network devices
+     * with flow export enabled.
+     *
+     * @param maxFlowsPerSecond per exporter; extra records are dropped and counted on the device
+     */
+    public record Flows(boolean enabled, String bindAddress, int netflowPort, int ipfixPort, int maxFlowsPerSecond,
+            int queueSize, Duration retention) {
     }
 }

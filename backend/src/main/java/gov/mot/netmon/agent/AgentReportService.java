@@ -37,12 +37,15 @@ public class AgentReportService {
     private final MetricWriter metricWriter;
     private final gov.mot.netmon.event.ReportEventDetector detector;
     private final gov.mot.netmon.event.AgentConnectionMonitor connections;
+    private final gov.mot.netmon.network.ReportAddresses addresses;
     private final Clock clock;
     private final int defaultInterval;
 
     public AgentReportService(AgentRepository agents, ServerRepository servers, ServerAgentConfigRepository configs,
             SnapshotStore snapshots, MetricWriter metricWriter, gov.mot.netmon.event.ReportEventDetector detector,
-            gov.mot.netmon.event.AgentConnectionMonitor connections, Clock clock, AppProperties props) {
+            gov.mot.netmon.event.AgentConnectionMonitor connections, gov.mot.netmon.network.ReportAddresses addresses,
+            Clock clock, AppProperties props) {
+        this.addresses = addresses;
         this.detector = detector;
         this.connections = connections;
         this.agents = agents;
@@ -83,6 +86,7 @@ public class AgentReportService {
         detector.compare(server, previous, report);
         snapshots.upsertIfNewer(server.getId(), report, now);
         int rows = metricWriter.write(server.getId(), report);
+        addresses.record(server, report);
         log.debug("Report from {} stored ({} samples, {} collector errors)", server.getName(), rows, errors);
         return new ReportResponse(now, true, null, toProtocolConfig(config, server));
     }

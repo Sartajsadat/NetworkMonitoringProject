@@ -96,7 +96,17 @@ public final class AgentProtocol {
             @Size(max = 100) List<@Valid Service> services,
             @Size(max = 30) List<@Valid ProcessInfo> processes,
             @Size(max = 30) List<@Valid CollectorStatus> collectors,
-            @Valid Capture capture) {
+            @Valid Capture capture,
+            @Size(max = 512) List<@Valid Neighbor> neighbors) {
+    }
+
+    /** One entry of the server's neighbour (ARP / NDP) table: an address on a local network and its MAC. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Neighbor(
+            @NotBlank @Size(max = 45) String ip,
+            @Size(max = 17) @Pattern(regexp = "^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$") String mac,
+            @Size(max = 128) @Pattern(regexp = RESOURCE_PATTERN) String interfaceName,
+            @Size(max = 20) String state) {
     }
 
     /**

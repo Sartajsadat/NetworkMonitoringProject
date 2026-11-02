@@ -104,6 +104,14 @@ app:
   events:
     retention: ${EVENTS_RETENTION:P180D}
     max-per-server-per-hour: ${EVENTS_MAX_PER_SERVER_PER_HOUR:600}
+  flows:
+    enabled: ${FLOW_COLLECTOR_ENABLED:false}
+    bind-address: ${FLOW_BIND_ADDRESS:0.0.0.0}
+    netflow-port: ${FLOW_NETFLOW_PORT:2055}
+    ipfix-port: ${FLOW_IPFIX_PORT:4739}
+    max-flows-per-second: ${FLOW_MAX_PER_SECOND:20000}
+    queue-size: ${FLOW_QUEUE_SIZE:200000}
+    retention: ${FLOWS_RETENTION:P14D}
   alerts:
     evaluation-interval: ${ALERT_EVALUATION_INTERVAL:PT1M}
     resolved-retention: ${ALERTS_RESOLVED_RETENTION:P365D}

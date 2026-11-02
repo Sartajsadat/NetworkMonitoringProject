@@ -21,7 +21,7 @@ class MetricWriterTest {
                 null,
                 List.of(new AgentProtocol.NetworkInterface("eth0", "up", null, List.of(), null, null, 1L, 1L, 1L, 1L,
                         0L, 0L, 0L, 0L, Double.NaN, 5.0, null, null, null, null)),
-                null, null, null, null);
+                null, null, null, null, null);
         var samples = MetricWriter.extract(report);
         assertThat(samples).extracting(MetricWriter.Sample::metric)
                 .contains(MetricNames.CPU_IOWAIT, MetricNames.LOAD_1, MetricNames.MEM_USED_PCT, MetricNames.DISK_USED_PCT,
