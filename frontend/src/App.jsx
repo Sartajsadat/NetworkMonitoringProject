@@ -32,6 +32,10 @@ import IpAddressesPage from './pages/network/IpAddressesPage.jsx';
 import IpDetailPage from './pages/network/IpDetailPage.jsx';
 import DevicesPage from './pages/network/DevicesPage.jsx';
 import TrafficPage from './pages/network/TrafficPage.jsx';
+import FirewallIntegrationsPage from './pages/firewall/FirewallIntegrationsPage.jsx';
+import FirewallRulesPage from './pages/firewall/FirewallRulesPage.jsx';
+import RuleRequestPage from './pages/firewall/RuleRequestPage.jsx';
+import RuleDetailPage from './pages/firewall/RuleDetailPage.jsx';
 
 export default function App() {
   return (
@@ -76,6 +80,10 @@ export default function App() {
         <Route path="ip-addresses/:id" element={<IpDetailPage />} />
         <Route path="network-devices" element={<DevicesPage />} />
         <Route path="traffic" element={<ProtectedRoute roles={PERMISSIONS.viewTraffic}><TrafficPage /></ProtectedRoute>} />
+        <Route path="firewall" element={<FirewallIntegrationsPage />} />
+        <Route path="ip-policies" element={<FirewallRulesPage />} />
+        <Route path="ip-policies/new" element={<ProtectedRoute roles={PERMISSIONS.requestFirewallRules}><RuleRequestPage /></ProtectedRoute>} />
+        <Route path="ip-policies/:id" element={<RuleDetailPage />} />
         <Route path="users" element={<ProtectedRoute roles={[ROLES.SUPER_ADMIN]}><UsersPage /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute roles={PERMISSIONS.viewAudit}><AuditLogPage /></ProtectedRoute>} />
         <Route path="account/password" element={<ChangePasswordPage />} />

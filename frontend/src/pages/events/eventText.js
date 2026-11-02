@@ -2,7 +2,7 @@
 // summary; it is the fallback for event types this file does not know.
 
 export const SEVERITIES = ['INFO', 'WARNING', 'ERROR', 'CRITICAL'];
-export const CATEGORIES = ['PERFORMANCE', 'AVAILABILITY', 'SERVICE', 'NETWORK', 'CAPTURE', 'SECURITY', 'AGENT', 'SYSTEM'];
+export const CATEGORIES = ['PERFORMANCE', 'AVAILABILITY', 'SERVICE', 'NETWORK', 'CAPTURE', 'SECURITY', 'AGENT', 'SYSTEM', 'FIREWALL'];
 
 export const SEVERITY_STYLE = {
   INFO: { bg: 'info', icon: 'info-circle-fill' },
@@ -13,7 +13,7 @@ export const SEVERITY_STYLE = {
 
 export const CATEGORY_ICON = {
   PERFORMANCE: 'speedometer', AVAILABILITY: 'plug', SERVICE: 'gear', NETWORK: 'ethernet', CAPTURE: 'record-circle',
-  SECURITY: 'shield-lock', AGENT: 'broadcast', SYSTEM: 'hdd-network',
+  SECURITY: 'shield-lock', AGENT: 'broadcast', SYSTEM: 'hdd-network', FIREWALL: 'bricks',
 };
 
 /** Value of an alert rule in its unit (percent, bits/s, ratio, ...). */
@@ -83,7 +83,13 @@ export function eventSummary(e, i18n) {
     case 'EVENTS_SUPPRESSED': vars = { n: formatNumber(d.limit) }; break;
     case 'IP_MAC_CHANGED': vars = { ip: d.address, oldMac: d.oldMac, newMac: d.newMac }; break;
     case 'NEW_ADDRESS_SEEN': vars = { ip: d.address, mac: d.mac || '—' }; break;
+    case 'FIREWALL_UNKNOWN_RULE': vars = { tag: d.tag || '' }; break;
     default:
+      if (e.type?.startsWith('FIREWALL_RULE_')) {
+        // the rule text ("block from 203.0.113.0/24 TCP port 443") is technical and stays as recorded
+        vars = { rule: d.rule || '', target: d.target || e.resource || '', message: d.message ? ` — ${d.message}` : '' };
+        break;
+      }
       if (d.ruleType) {
         const unit = d.unit;
         return t('event.summary.ALERT_OPENED', {

@@ -20,9 +20,11 @@ describe('Sidebar', () => {
 
   it('marks unbuilt modules as disabled with their phase instead of linking to them', () => {
     renderWithAuth(<Sidebar />, { user: makeUser(['NETWORK_ADMIN']) });
-    expect(screen.queryByRole('link', { name: /firewall/i })).not.toBeInTheDocument();
-    const item = screen.getByText('Firewall integrations').closest('[aria-disabled="true"]');
-    expect(item).toHaveTextContent('Phase 7');
+    const item = screen.getByText('Application access').closest('[aria-disabled="true"]');
+    expect(item).toHaveTextContent('Phase 8');
+    // Built in Phase 7: real links now.
+    expect(screen.getByRole('link', { name: /firewall integrations/i })).toHaveAttribute('href', '/firewall');
+    expect(screen.getByRole('link', { name: /ip allow \/ block/i })).toHaveAttribute('href', '/ip-policies');
   });
 
   it('shows packet capture pages only to roles allowed to see captures', () => {

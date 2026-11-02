@@ -28,6 +28,11 @@ export const PERMISSIONS = {
   // IP inventory: everyone reads; network and super administrators change. Flow data like captures.
   manageNetwork: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN],
   viewTraffic: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
+  // Firewall: everyone sees targets and rules; analysts may request; network/super admins approve
+  // (never their own request) and manage targets; only a super admin may switch on enforcement.
+  requestFirewallRules: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN, ROLES.SECURITY_ANALYST],
+  manageFirewall: [ROLES.SUPER_ADMIN, ROLES.NETWORK_ADMIN],
+  enforceFirewall: [ROLES.SUPER_ADMIN],
 };
 
 export function hasAnyRole(user, roles) {

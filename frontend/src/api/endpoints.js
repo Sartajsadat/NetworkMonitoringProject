@@ -133,3 +133,20 @@ export const networkApi = {
   flows: (params) => api.get('/network-flows', { params }).then((r) => r.data),
   collector: () => api.get('/network-flows/collector').then((r) => r.data),
 };
+
+// Firewall and access control (Phase 7)
+export const firewallApi = {
+  integrations: () => api.get('/firewall-integrations').then((r) => r.data),
+  integration: (id) => api.get(`/firewall-integrations/${id}`).then((r) => r.data),
+  createIntegration: (body) => api.post('/firewall-integrations', body).then((r) => r.data),
+  setMode: (id, mode, reason) => api.put(`/firewall-integrations/${id}/mode`, { mode, reason }).then((r) => r.data),
+  deleteIntegration: (id) => api.delete(`/firewall-integrations/${id}`),
+  rules: (params) => api.get('/firewall-rules', { params, paramsSerializer: { indexes: null } }).then((r) => r.data),
+  rule: (id) => api.get(`/firewall-rules/${id}`).then((r) => r.data),
+  preview: (body) => api.post('/firewall-rules/preview', body).then((r) => r.data),
+  request: (body) => api.post('/firewall-rules', body).then((r) => r.data),
+  approve: (id, comment) => api.post(`/firewall-rules/${id}/approve`, { comment }).then((r) => r.data),
+  reject: (id, comment) => api.post(`/firewall-rules/${id}/reject`, { comment }).then((r) => r.data),
+  cancel: (id) => api.post(`/firewall-rules/${id}/cancel`).then((r) => r.data),
+  remove: (id, reason) => api.post(`/firewall-rules/${id}/remove`, { reason }).then((r) => r.data),
+};
