@@ -66,10 +66,11 @@ public class FirewallService {
             AgentProtocol.Firewall f = s.report().firewall();
             boolean online = s.receivedAt().isAfter(clock.instant().minus(props.monitoring().onlineThreshold()));
             if (f == null) return new TargetState(false, false, null, "The agent does not report firewall support (agent older than 0.6.0?)",
-                    List.of(), s.receivedAt(), online);
+                    List.of(), s.receivedAt(), online, List.of());
             return new TargetState(f.enabled(), f.enforcementAllowed(), f.backend(), f.message(),
-                    f.protectedAddresses() == null ? List.of() : f.protectedAddresses(), s.receivedAt(), online);
-        }).orElse(new TargetState(false, false, null, "No report from an agent yet", List.of(), null, false));
+                    f.protectedAddresses() == null ? List.of() : f.protectedAddresses(), s.receivedAt(), online,
+                    f.applicationControl() == null ? List.of() : f.applicationControl());
+        }).orElse(new TargetState(false, false, null, "No report from an agent yet", List.of(), null, false, List.of()));
     }
 
     IntegrationView view(FirewallIntegration i) {

@@ -63,10 +63,14 @@ public class FirewallRuleService {
     private final AuditService audit;
     private final JdbcTemplate jdbc;
     private final Clock clock;
+    private final ApplicationRepository applications;
+    private final com.fasterxml.jackson.databind.ObjectMapper json;
 
     public FirewallRuleService(FirewallRuleRepository rules, FirewallIntegrationRepository integrations, FirewallService firewalls,
             AgentTaskRepository tasks, ServerRepository servers, FirewallEvents events, AuditService audit, JdbcTemplate jdbc,
-            Clock clock) {
+            Clock clock, ApplicationRepository applications, com.fasterxml.jackson.databind.ObjectMapper json) {
+        this.applications = applications;
+        this.json = json;
         this.rules = rules;
         this.integrations = integrations;
         this.firewalls = firewalls;
@@ -135,7 +139,7 @@ public class FirewallRuleService {
         String tag = newTag();
         Instant now = clock.instant();
         FirewallRule rule = new FirewallRule(i.getId(), tag, c.spec(), r.reason().trim(), FirewallService.blank(r.reference()),
-                r.expiresAt(), RuleValidator.preview(c.spec(), tag, backend(t)), String.join("\n", c.warnings()), user.username(), now);
+                r.expiresAt(), RuleValidator.preview(c.spec(), tag, backend(t)), RuleValidator.encode(c.warningIssues()), user.username(), now);
         rules.save(rule);
         audit.event(AuditAction.FIREWALL_RULE_REQUESTED).target("FIREWALL_RULE", rule.getId()).detail("target", i.getName())
                 .detail("rule", FirewallEvents.describe(rule)).detail("expiresAt", r.expiresAt())
@@ -170,8 +174,18 @@ public class FirewallRuleService {
         FirewallIntegration i = firewalls.find(rule.getIntegrationId());
         requireDecider(user, rule);
         TargetState t = firewalls.target(i);
-        RuleValidator.Check c = check(i, requestOf(rule), t);
-        if (!c.ok()) throw ApiException.conflict("RULE_NOW_UNSAFE", "The rule no longer passes the safety checks: " + String.join("; ", c.errors()));
+        List<String> problems;
+        if (rule.isApplication()) {
+            Application app = applications.findById(rule.getApplicationId()).orElseThrow(() -> ApiException.notFound("Application"));
+            String unsupported = appSupport(i, t, app.getIdentityKind());
+            AppPolicyValidator.Check c = AppPolicyValidator.check(rule.getAppMode(), app.getIdentityKind(), app.getIdentityValue(),
+                    destinations(rule), null, clock.instant(), dryRun(i, t));
+            problems = new ArrayList<>(c.errorIssues().stream().map(RuleValidator.Issue::text).toList());
+            if (unsupported != null) problems.add(unsupported);
+        } else {
+            problems = check(i, requestOf(rule), t).errors();
+        }
+        if (!problems.isEmpty()) throw ApiException.conflict("RULE_NOW_UNSAFE", "The rule no longer passes the safety checks: " + String.join("; ", problems));
         Instant now = clock.instant();
         rule.decide(user.username(), now);
         boolean dry = dryRun(i, t);
@@ -183,7 +197,7 @@ public class FirewallRuleService {
         events.rule(rule, i, "FIREWALL_RULE_APPROVED", EventSeverity.INFO, "Firewall rule approved by " + user.username()
                 + " (" + (dry ? "dry run" : "enforce") + "): " + FirewallEvents.describe(rule));
         if (i.isAgent()) {
-            tasks.save(AgentTask.firewall(i.getServerId(), rule.getId(), "APPLY_FIREWALL_RULE", payload(rule, dry), now));
+            tasks.save(AgentTask.firewall(i.getServerId(), rule.getId(), "APPLY_FIREWALL_RULE", payload(rule, dry, appOf(rule)), now));
         } else {
             // Central equipment without an adapter: the preview is the result. Nothing was sent anywhere.
             setStatus(rule, i, "DRY_RUN", "Dry run only: no adapter for this equipment. Apply the previewed change on the device"
@@ -230,8 +244,47 @@ public class FirewallRuleService {
                 r.getProtocol(), r.getLocalPort(), r.getRemotePort(), r.getReason(), r.getReference(), null, true);
     }
 
-    static Map<String, Object> payload(FirewallRule r, boolean dryRun) {
+    /**
+     * Why the target cannot enforce this kind of application identity, or null if it can. Central
+     * firewalls and agents without the capability are reported honestly instead of pretending.
+     */
+    static String appSupport(FirewallIntegration i, TargetState t, String kind) {
+        if (!i.isAgent()) return "No adapter can enforce application identities on this central firewall";
+        if (t == null || !t.agentFirewallEnabled()) return "Firewall control is not enabled in this server's agent";
+        if (t.applicationControl() == null || !t.applicationControl().contains(kind)) {
+            return "This server's firewall (" + (t.backend() == null ? "none" : t.backend()) + ") cannot match applications by "
+                    + kind + " (agent 0.7.0+ with nftables for Linux users, or Windows Defender Firewall for programs and services)";
+        }
+        return null;
+    }
+
+    private Application appOf(FirewallRule r) {
+        return r.isApplication() ? applications.findById(r.getApplicationId()).orElse(null) : null;
+    }
+
+    List<AppPolicyValidator.Destination> destinations(FirewallRule r) {
+        if (r.getDestinations() == null) return List.of();
+        try {
+            return List.of(json.readValue(r.getDestinations(), AppPolicyValidator.Destination[].class));
+        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new IllegalStateException("Corrupt destinations on rule " + r.getId(), e);
+        }
+    }
+
+    Map<String, Object> payload(FirewallRule r, boolean dryRun, Application app) {
         Map<String, Object> p = new LinkedHashMap<>();
+        if (app != null) {
+            p.put("ruleId", r.getId().toString());
+            p.put("tag", r.getTag());
+            p.put("kind", "APPLICATION");
+            p.put("identityKind", app.getIdentityKind());
+            p.put("identity", app.getIdentityValue());
+            p.put("appMode", r.getAppMode());
+            p.put("destinations", destinations(r));
+            p.put("mode", dryRun ? "DRY_RUN" : "ENFORCE");
+            if (r.getExpiresAt() != null) p.put("expiresAt", r.getExpiresAt().toString());
+            return p;
+        }
         p.put("ruleId", r.getId().toString());
         p.put("tag", r.getTag());
         p.put("action", r.getAction());
@@ -377,18 +430,28 @@ public class FirewallRuleService {
 
     RuleView view(FirewallRule r, FirewallIntegration i) {
         String sn = serverName(i);
-        List<String> warnings = r.getWarnings() == null || r.getWarnings().isBlank() ? List.of() : List.of(r.getWarnings().split("\n"));
+        List<RuleValidator.Issue> warnings = RuleValidator.decode(r.getWarnings());
         return new RuleView(r.getId(), i.getId(), i.getName(), i.getKind(), i.getServerId(), sn, scope(i, sn), r.getTag(), r.getAction(),
                 r.getDirection(), r.getRemoteCidr(), r.getLocalCidr(), r.getProtocol(), r.getLocalPort(), r.getRemotePort(), r.getReason(),
                 r.getReference(), r.getExpiresAt(), r.getStatus(), r.getStatusMessage(), r.getModeAtApply(), r.getPreview(), warnings,
                 r.getAgentCommand(), r.getRequestedBy(), r.getRequestedAt(), r.getDecidedBy(), r.getDecidedAt(), r.getAppliedAt(),
                 r.getLastVerifiedAt(), r.getRemovalRequestedBy(), r.getRemovalRequestedAt(), r.getRemovalReason(), r.getRemovedAt(),
-                r.isExpiring());
+                r.isExpiring(), r.getApplicationId(), r.getApplicationLabel(), r.getAppMode(), r.isApplication() ? destinations(r) : null);
     }
 
     @Transactional(readOnly = true)
     public Page<RuleView> list(UUID integrationId, List<String> statuses, String address, int page, int size) {
+        return list(integrationId, statuses, address, null, null, page, size);
+    }
+
+    /** @param kind IP or APPLICATION (null: both) */
+    @Transactional(readOnly = true)
+    public Page<RuleView> list(UUID integrationId, List<String> statuses, String address, UUID applicationId, String kind, int page,
+            int size) {
         Specification<FirewallRule> spec = (root, q, cb) -> cb.conjunction();
+        if (applicationId != null) spec = spec.and((root, q, cb) -> cb.equal(root.get("applicationId"), applicationId));
+        if ("IP".equals(kind)) spec = spec.and((root, q, cb) -> cb.isNull(root.get("applicationId")));
+        if ("APPLICATION".equals(kind)) spec = spec.and((root, q, cb) -> cb.isNotNull(root.get("applicationId")));
         if (integrationId != null) spec = spec.and((root, q, cb) -> cb.equal(root.get("integrationId"), integrationId));
         if (statuses != null && !statuses.isEmpty()) spec = spec.and((root, q, cb) -> root.get("status").in(statuses));
         if (address != null && !address.isBlank()) {

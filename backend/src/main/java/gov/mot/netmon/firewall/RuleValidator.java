@@ -52,6 +52,20 @@ public final class RuleValidator {
         }
     }
 
+    /** Stored form of acknowledged warnings: one "code TAB param TAB text" line each. */
+    public static String encode(List<Issue> issues) {
+        return String.join("\n", issues.stream().map(i -> i.code() + "\t" + (i.param() == null ? "" : i.param()) + "\t"
+                + i.text().replace('\n', ' ').replace('\t', ' ')).toList());
+    }
+
+    public static List<Issue> decode(String stored) {
+        if (stored == null || stored.isBlank()) return List.of();
+        return java.util.Arrays.stream(stored.split("\n")).map(l -> {
+            String[] p = l.split("\t", 3);
+            return p.length == 3 ? new Issue(p[0], p[1].isEmpty() ? null : p[1], p[2]) : new Issue(null, null, l);
+        }).toList();
+    }
+
     static void add(List<Issue> list, String code, String param, String text) {
         list.add(new Issue(code, param, text));
     }

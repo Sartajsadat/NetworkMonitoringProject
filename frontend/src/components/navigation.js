@@ -35,7 +35,7 @@ export const NAV_SECTIONS = [
     items: [
       { to: '/firewall', label: 'nav.firewall', icon: 'bricks' },
       { to: '/ip-policies', label: 'nav.ipPolicies', icon: 'shield-lock' },
-      { label: 'nav.appAccess', icon: 'app-indicator', phase: 8 },
+      { to: '/app-access', label: 'nav.appAccess', icon: 'app-indicator' },
     ],
   },
   {

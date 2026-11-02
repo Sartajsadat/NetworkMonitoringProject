@@ -68,6 +68,13 @@ public class FirewallRule {
     @Column(name = "removed_at")
     private Instant removedAt;
     private boolean expiring;
+    @Column(name = "application_id")
+    private UUID applicationId;
+    @Column(name = "application_label")
+    private String applicationLabel;
+    @Column(name = "app_mode")
+    private String appMode;
+    private String destinations;
     @Column(name = "updated_at")
     private Instant updatedAt;
 
@@ -95,6 +102,23 @@ public class FirewallRule {
         this.requestedAt = now;
         this.status = "REQUESTED";
         this.updatedAt = now;
+    }
+
+    /** An application access policy (Phase 8): outbound, enforced on the application's identity. */
+    public static FirewallRule application(UUID integrationId, String tag, UUID applicationId, String applicationLabel, String appMode,
+            String destinationsJson, String reason, String reference, Instant expiresAt, String preview, String warnings, String by,
+            Instant now) {
+        FirewallRule r = new FirewallRule(integrationId, tag, new RuleSpec("ALLOW_ONLY".equals(appMode) ? "ALLOW" : "BLOCK", "OUTBOUND",
+                null, null, "ANY", null, null), reason, reference, expiresAt, preview, warnings, by, now);
+        r.applicationId = applicationId;
+        r.applicationLabel = cut(applicationLabel, 300);
+        r.appMode = appMode;
+        r.destinations = destinationsJson;
+        return r;
+    }
+
+    public boolean isApplication() {
+        return applicationId != null;
     }
 
     public RuleSpec spec() {
@@ -173,4 +197,8 @@ public class FirewallRule {
     public Instant getRemovedAt() { return removedAt; }
     public boolean isExpiring() { return expiring; }
     public Instant getUpdatedAt() { return updatedAt; }
+    public UUID getApplicationId() { return applicationId; }
+    public String getApplicationLabel() { return applicationLabel; }
+    public String getAppMode() { return appMode; }
+    public String getDestinations() { return destinations; }
 }

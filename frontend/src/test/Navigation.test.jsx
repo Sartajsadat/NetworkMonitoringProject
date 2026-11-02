@@ -20,8 +20,9 @@ describe('Sidebar', () => {
 
   it('marks unbuilt modules as disabled with their phase instead of linking to them', () => {
     renderWithAuth(<Sidebar />, { user: makeUser(['NETWORK_ADMIN']) });
-    const item = screen.getByText('Application access').closest('[aria-disabled="true"]');
-    expect(item).toHaveTextContent('Phase 8');
+    const item = screen.getByText('Logs').closest('[aria-disabled="true"]');
+    expect(item).toHaveTextContent('Phase 5b');
+    expect(screen.getByRole('link', { name: /application access/i })).toHaveAttribute('href', '/app-access');
     // Built in Phase 7: real links now.
     expect(screen.getByRole('link', { name: /firewall integrations/i })).toHaveAttribute('href', '/firewall');
     expect(screen.getByRole('link', { name: /ip allow \/ block/i })).toHaveAttribute('href', '/ip-policies');

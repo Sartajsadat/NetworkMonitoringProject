@@ -55,6 +55,16 @@ export function ModeBadge({ mode, enforcing }) {
 /** "block from 203.0.113.0/24 TCP port 443" in the user's language; addresses stay left-to-right. */
 export function RuleSummary({ rule }) {
   const { t } = useI18n();
+  if (rule.applicationId) {
+    return (
+      <span>
+        <i className="bi bi-app-indicator me-1" aria-hidden="true" />
+        <span className="fw-semibold">{rule.applicationLabel}</span>{' · '}
+        <span className={rule.appMode === 'ALLOW_ONLY' ? 'text-success fw-semibold' : 'text-danger fw-semibold'}>{t(`appAccess.mode.${rule.appMode}`)}</span>
+        {rule.destinations?.length > 0 && <> · {t('appAccess.destCount', { n: rule.destinations.length })}</>}
+      </span>
+    );
+  }
   return (
     <span>
       <span className={`fw-semibold ${rule.action === 'BLOCK' ? 'text-danger' : 'text-success'}`}>{t(`fw.action.${rule.action}`)}</span>{' '}
@@ -69,8 +79,19 @@ export function RuleSummary({ rule }) {
 }
 
 /** Where the rule takes effect. Never presented as a network-wide block for a server rule. */
-export function ScopeNote({ kind, name, className = '' }) {
+export function ScopeNote({ kind, name, app, className = '' }) {
   const { t } = useI18n();
+  if (app) {
+    return (
+      <div className={`alert alert-info d-flex gap-2 align-items-start mb-0 ${className}`} role="note">
+        <i className="bi bi-app-indicator fs-5" aria-hidden="true" />
+        <div>
+          <div className="fw-semibold">{t('appAccess.scopeTitle', { app, name: name || '?' })}</div>
+          <div className="small">{t('appAccess.scopeText')}</div>
+        </div>
+      </div>
+    );
+  }
   const server = kind === 'SERVER_AGENT' || kind === 'SERVER';
   return (
     <div className={`alert ${server ? 'alert-info' : 'alert-secondary'} d-flex gap-2 align-items-start mb-0 ${className}`} role="note">

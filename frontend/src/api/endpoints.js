@@ -150,3 +150,14 @@ export const firewallApi = {
   cancel: (id) => api.post(`/firewall-rules/${id}/cancel`).then((r) => r.data),
   remove: (id, reason) => api.post(`/firewall-rules/${id}/remove`, { reason }).then((r) => r.data),
 };
+
+// Application access control (Phase 8)
+export const appApi = {
+  list: (params) => api.get('/applications', { params }).then((r) => r.data),
+  get: (id) => api.get(`/applications/${id}`).then((r) => r.data),
+  create: (body) => api.post('/applications', body).then((r) => r.data),
+  update: (id, body) => api.put(`/applications/${id}`, body).then((r) => r.data),
+  remove: (id) => api.delete(`/applications/${id}`),
+  preview: (body) => api.post('/application-policies/preview', body).then((r) => r.data),
+  request: (body) => api.post('/application-policies', body).then((r) => r.data),
+};

@@ -59,6 +59,11 @@ class FirewallManagerTest {
         String problem;
         boolean swallow; // apply "succeeds" but the rule never shows up
         boolean rejectCheck;
+        List<String> appControl = List.of();
+
+        public List<String> applicationControl() { return appControl; }
+        public void checkApp(AppPolicy p) { calls.add("checkApp " + p.tag()); }
+        public void applyApp(AppPolicy p) { calls.add("applyApp " + p.tag()); present.add(p.tag()); }
 
         public String name() { return "NFTABLES"; }
         public String problem() { return problem; }
@@ -257,6 +262,30 @@ class FirewallManagerTest {
         assertEquals("APPLIED", last().get("state").asText());
     }
 
+    @Test
+    void applicationPoliciesAreAppliedVerifiedOrRefusedHonestly() throws Exception {
+        FirewallManager m = manager(true, true, List.of());
+        UUID id = UUID.randomUUID();
+        String app = "{\"type\":\"APPLY_FIREWALL_RULE\",\"firewall\":{\"ruleId\":\"" + id + "\",\"tag\":\"cc000001\",\"kind\":\"APPLICATION\","
+                + "\"identityKind\":\"LINUX_USER\",\"identity\":\"payroll\",\"appMode\":\"BLOCK_INTERNET\",\"destinations\":[],\"mode\":\"ENFORCE\"}}";
+        tasks.add(app); // the fake firewall cannot match applications
+        m.tick();
+        assertEquals("FAILED", last().get("state").asText());
+        assertTrue(last().get("message").asText().startsWith("Not supported here"));
+        assertTrue(fw.present.isEmpty());
+        assertEquals(List.of(), m.capability().applicationControl());
+
+        fw.appControl = List.of("LINUX_USER");
+        tasks.add(app);
+        m.tick();
+        assertEquals("APPLIED", last().get("state").asText());
+        assertEquals(List.of("LINUX_USER"), m.capability().applicationControl());
+        tasks.add(app.replace("payroll", "root").replace("cc000001", "cc000002"));
+        m.tick();
+        assertEquals("FAILED", last().get("state").asText());
+        assertTrue(last().get("message").asText().contains("restricting root"));
+    }
+
     // ------------------------------------------------------------------ backends
 
     @Test
@@ -285,7 +314,7 @@ class FirewallManagerTest {
         assertEquals("-f", calls.get(1).get(0));
         assertEquals(Set.of("ab12cd34"), b.tags());
         assertTrue(b.remove("ab12cd34"));
-        assertEquals(List.of("delete", "rule", "inet", "netmon", "input", "handle", "4"), calls.get(calls.size() - 1));
+        assertTrue(calls.contains(List.of("delete", "rule", "inet", "netmon", "input", "handle", "4")));
         try (var files = Files.list(root.resolve("tmp"))) {
             assertEquals(0, files.count()); // temporary scripts are deleted
         }
@@ -385,7 +414,7 @@ class FirewallManagerTest {
         assertTrue(Cidrs.overlaps("10.0.0.0/8", "10.9.0.0/16"));
         assertFalse(Cidrs.overlaps("10.0.0.0/8", "::/0"));
         assertTrue(Cidrs.overlaps("::/0", "::1/128"));
-        Report.Firewall none = new Report.Firewall(false, false, null, "x", List.of(), null);
+        Report.Firewall none = new Report.Firewall(false, false, null, "x", List.of(), null, null);
         assertNull(none.ruleTags());
     }
 }

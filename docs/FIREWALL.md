@@ -143,6 +143,17 @@ Use this if a rule cuts off access, or to remove everything NetMon did on a serv
 Every NetMon rule is tagged (`netmon:<tag>` / `netmon-<tag>`), so these commands never touch rules
 created by anyone else.
 
+## 4a. Application access policies (Phase 8)
+
+Application policies use the same targets, modes, approval, verification, expiry and recovery as IP
+rules. They are listed under *IP allow / block* too, and each application's page
+(*Application access*) shows its policies and their last verification. Identities and limits are
+explained in [PHASE-8.md](PHASE-8.md).
+
+Recovery is the same: `nft delete table inet netmon` also removes every application chain; on
+Windows `Remove-NetFirewallRule -Group NetMon` removes the application rules (named
+`netmon-<tag>-<n>`).
+
 ## 5. Settings (platform)
 
 | Variable | Default | Meaning |

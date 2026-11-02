@@ -96,6 +96,70 @@ public class WindowsFirewallBackend implements FirewallBackend {
     }
 
     @Override
+    public List<String> applicationControl() {
+        return problem == null ? List.of("WINDOWS_PROGRAM", "WINDOWS_SERVICE") : List.of();
+    }
+
+    /** One block rule per entry; "allow only" / "block internet" become a block of every other address. */
+    static List<Map<String, String>> appRules(AppPolicy p) {
+        List<Map<String, String>> out = new ArrayList<>();
+        if ("BLOCK_DESTINATIONS".equals(p.appMode())) {
+            for (AppPolicy.Dest d : p.destinations()) {
+                Map<String, String> m = new LinkedHashMap<>();
+                m.put("remote", d.cidr());
+                m.put("protocol", "ANY".equals(d.protocol()) ? "Any" : d.protocol());
+                if (d.port() != null) m.put("port", d.port());
+                out.add(m);
+            }
+        } else {
+            if (p.destinations().stream().anyMatch(d -> !"ANY".equals(d.protocol()))) {
+                throw new IllegalArgumentException("Windows Firewall cannot express allow-only ports for one program");
+            }
+            out.add(new LinkedHashMap<>(Map.of("remote", String.join(",", AppPolicy.complement(p.allowed())), "protocol", "Any")));
+        }
+        return out;
+    }
+
+    Map<String, String> appEnv(String op, AppPolicy p) throws FirewallException {
+        if (!p.identityKind().startsWith("WINDOWS")) throw new FirewallException("Windows Firewall cannot match " + p.identityKind());
+        try {
+            return Map.of("NETMON_FW_OP", op, "NETMON_FW_TAG", p.tag(), "NETMON_FW_APP_KIND", p.identityKind(), "NETMON_FW_APP_VALUE",
+                    p.identity(), "NETMON_FW_APP_RULES", Json.MAPPER.writeValueAsString(appRules(p)));
+        } catch (IllegalArgumentException | com.fasterxml.jackson.core.JsonProcessingException e) {
+            throw new FirewallException(e.getMessage());
+        }
+    }
+
+    @Override
+    public String describeApp(AppPolicy p) {
+        String match = "WINDOWS_PROGRAM".equals(p.identityKind()) ? "-Program \"" + p.identity() + "\"" : "-Service " + p.identity();
+        StringBuilder b = new StringBuilder();
+        int n = 0;
+        try {
+            for (Map<String, String> r : appRules(p)) {
+                b.append("New-NetFirewallRule -Name netmon-").append(p.tag()).append('-').append(++n)
+                        .append(" -Group NetMon -Direction Outbound -Action Block ").append(match).append(" -RemoteAddress ").append(r.get("remote"));
+                if (!"Any".equals(r.get("protocol"))) b.append(" -Protocol ").append(r.get("protocol"));
+                if (r.get("port") != null) b.append(" -RemotePort ").append(r.get("port"));
+                b.append('\n');
+            }
+        } catch (IllegalArgumentException e) {
+            return "(" + e.getMessage() + ")";
+        }
+        return b.toString().trim();
+    }
+
+    @Override
+    public void checkApp(AppPolicy p) throws FirewallException {
+        call(appEnv("check-app", p));
+    }
+
+    @Override
+    public void applyApp(AppPolicy p) throws FirewallException {
+        call(appEnv("apply-app", p));
+    }
+
+    @Override
     public void check(FwRule r) throws FirewallException {
         call(env("check", r));
     }

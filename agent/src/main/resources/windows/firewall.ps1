@@ -16,8 +16,8 @@ try {
         'state' {
             $profiles = @(Get-NetFirewallProfile | ForEach-Object { [ordered]@{ name = [string]$_.Name; enabled = [bool]($_.Enabled -eq 'True') } })
             $tags = @(Get-NetFirewallRule -Group 'NetMon' -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -match '^netmon-[0-9a-f]{8,16}$' -and $_.Enabled -eq 'True' } |
-                ForEach-Object { $_.Name.Substring(7) })
+                Where-Object { $_.Name -match '^netmon-[0-9a-f]{8,16}(-\d+)?$' -and $_.Enabled -eq 'True' } |
+                ForEach-Object { ($_.Name -replace '^netmon-([0-9a-f]{8,16})(-\d+)?$', '$1') } | Sort-Object -Unique)
             $ports = @(22, 3389, 5985, 5986)
             $sessions = @(Get-NetTCPConnection -State Established -ErrorAction SilentlyContinue |
                 Where-Object { $ports -contains $_.LocalPort } | ForEach-Object { [string]$_.RemoteAddress } | Sort-Object -Unique)
@@ -47,10 +47,33 @@ try {
                 }
             }
         }
+        { $_ -eq 'apply-app' -or $_ -eq 'check-app' } {
+            # Application policy: outbound block rules bound to one program or service.
+            # NETMON_FW_APP_RULES is JSON data (never code): [{ remote, protocol, port }, ...]
+            if ($tag -notmatch '^[0-9a-f]{8,16}$') { throw 'invalid tag' }
+            $rules = @($env:NETMON_FW_APP_RULES | ConvertFrom-Json)
+            $n = 0
+            foreach ($x in $rules) {
+                $n++
+                $p = @{
+                    Name = "netmon-$tag-$n"; DisplayName = "NetMon $tag ($n)"; Group = 'NetMon'; Direction = 'Outbound'
+                    Action = 'Block'; Enabled = 'True'; Profile = 'Any'; RemoteAddress = @($x.remote -split ',')
+                    Description = 'Application policy created by the NetMon agent for an approved platform request'
+                }
+                if ($env:NETMON_FW_APP_KIND -eq 'WINDOWS_PROGRAM') { $p.Program = $env:NETMON_FW_APP_VALUE }
+                elseif ($env:NETMON_FW_APP_KIND -eq 'WINDOWS_SERVICE') { $p.Service = $env:NETMON_FW_APP_VALUE }
+                else { throw 'unsupported identity' }
+                if ($x.protocol -and $x.protocol -ne 'Any') { $p.Protocol = $x.protocol }
+                if ($x.port) { $p.RemotePort = $x.port }
+                if ($op -eq 'check-app') { New-NetFirewallRule @p -WhatIf | Out-Null }
+                elseif (-not (Get-NetFirewallRule -Name $p.Name -ErrorAction SilentlyContinue)) { New-NetFirewallRule @p | Out-Null }
+            }
+            Out-Result $true "$n rule(s)" $null
+        }
         'remove' {
             if ($tag -notmatch '^[0-9a-f]{8,16}$') { throw 'invalid tag' }
-            $r = Get-NetFirewallRule -Name "netmon-$tag" -ErrorAction SilentlyContinue
-            if ($r) { Remove-NetFirewallRule -Name "netmon-$tag"; Out-Result $true 'removed' @{ found = $true } }
+            $r = @(Get-NetFirewallRule -Group 'NetMon' -ErrorAction SilentlyContinue | Where-Object { $_.Name -eq "netmon-$tag" -or $_.Name -match "^netmon-$tag-\d+$" })
+            if ($r.Count -gt 0) { $r | Remove-NetFirewallRule; Out-Result $true 'removed' @{ found = $true } }
             else { Out-Result $true 'not present' @{ found = $false } }
         }
         default { Out-Result $false 'unknown operation' $null }

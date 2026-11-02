@@ -84,7 +84,68 @@ public class NftablesBackend implements FirewallBackend {
         return "nft " + rule(r);
     }
 
+    @Override
+    public List<String> applicationControl() {
+        return problem == null ? List.of("LINUX_USER") : List.of();
+    }
+
+    static String dest(AppPolicy.Dest d) {
+        StringBuilder b = new StringBuilder(d.cidr().contains(":") ? "ip6 daddr " : "ip daddr ").append(d.cidr());
+        if (!"ANY".equals(d.protocol())) {
+            String p = d.protocol().toLowerCase(Locale.ROOT);
+            b.append(d.port() == null ? " meta l4proto " + p : " " + p + " dport " + d.port());
+        }
+        return b.toString();
+    }
+
+    /**
+     * One chain per policy (app_&lt;tag&gt;), entered from the output chain for packets of sockets owned
+     * by the application's account. Replies to connections others opened to the application pass.
+     */
+    public static String appBatch(AppPolicy p) {
+        if (!"LINUX_USER".equals(p.identityKind())) throw new IllegalArgumentException("nftables matches Linux users only");
+        String chain = "app_" + p.tag();
+        String r = "add rule inet netmon " + chain + " ";
+        StringBuilder b = new StringBuilder();
+        b.append("add chain inet netmon ").append(chain).append('\n');
+        b.append(r).append("ct direction reply accept\n");
+        if ("BLOCK_DESTINATIONS".equals(p.appMode())) {
+            p.destinations().forEach(d -> b.append(r).append(dest(d)).append(" counter drop\n"));
+        } else {
+            for (String c : p.allowed().subList(0, p.allowed().size() - p.destinations().size())) {
+                b.append(r).append(c.contains(":") ? "ip6 daddr " : "ip daddr ").append(c).append(" accept\n");
+            }
+            p.destinations().forEach(d -> b.append(r).append(dest(d)).append(" accept\n"));
+            b.append(r).append("counter drop\n");
+        }
+        // The jump goes last so the chain is complete before any packet can enter it.
+        b.append("add rule inet netmon output meta skuid \"").append(p.identity()).append("\" jump ").append(chain)
+                .append(" comment \"netmon:").append(p.tag()).append("\"\n");
+        return b.toString();
+    }
+
+    @Override
+    public String describeApp(AppPolicy p) {
+        return "nft -f - <<EOF\n" + appBatch(p) + "EOF";
+    }
+
+    @Override
+    public void checkApp(AppPolicy p) throws FirewallException {
+        CommandRunner.Result res = loadText(TABLE + appBatch(p), true);
+        if (res.exitCode() != 0) throw new FirewallException("nft rejected the policy: " + FirewallBackend.firstLine(res.stdout()));
+    }
+
+    @Override
+    public void applyApp(AppPolicy p) throws FirewallException {
+        CommandRunner.Result res = loadText(TABLE + appBatch(p), false);
+        if (res.exitCode() != 0) throw new FirewallException("nft failed: " + FirewallBackend.firstLine(res.stdout()));
+    }
+
     private CommandRunner.Result load(FwRule r, boolean checkOnly) throws FirewallException {
+        return loadText(TABLE + rule(r) + "\n", checkOnly);
+    }
+
+    private CommandRunner.Result loadText(String script, boolean checkOnly) throws FirewallException {
         Path file = null;
         try {
             Files.createDirectories(workDir);
@@ -94,7 +155,7 @@ public class NftablesBackend implements FirewallBackend {
             } catch (UnsupportedOperationException ignored) {
                 // not a POSIX file system
             }
-            Files.writeString(file, TABLE + rule(r) + "\n", StandardCharsets.UTF_8);
+            Files.writeString(file, script, StandardCharsets.UTF_8);
             List<String> args = new ArrayList<>();
             if (checkOnly) args.add("-c");
             args.add("-f");
@@ -127,6 +188,25 @@ public class NftablesBackend implements FirewallBackend {
     }
 
     record Listed(String chain, long handle, String tag) {
+    }
+
+    /** Names of the chains in table inet netmon. */
+    Set<String> chains() throws FirewallException {
+        Set<String> out = new HashSet<>();
+        try {
+            CommandRunner.Result res = nft.run(List.of("-j", "list", "table", "inet", "netmon"));
+            if (res.exitCode() != 0) return out;
+            for (JsonNode item : Json.MAPPER.readTree(res.stdout()).path("nftables")) {
+                JsonNode c = item.get("chain");
+                if (c != null && "netmon".equals(c.path("table").asText())) out.add(c.path("name").asText());
+            }
+        } catch (IOException e) {
+            throw new FirewallException("nft could not run: " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new FirewallException("interrupted");
+        }
+        return out;
     }
 
     List<Listed> list() throws FirewallException {
@@ -178,6 +258,19 @@ public class NftablesBackend implements FirewallBackend {
             try {
                 CommandRunner.Result res = nft.run(List.of("delete", "rule", "inet", "netmon", l.chain(), "handle", Long.toString(l.handle())));
                 if (res.exitCode() != 0) throw new FirewallException("nft delete failed: " + FirewallBackend.firstLine(res.stdout()));
+            } catch (IOException e) {
+                throw new FirewallException("nft could not run: " + e.getMessage());
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new FirewallException("interrupted");
+            }
+        }
+        // An application policy also has its own chain; it can go once nothing jumps to it.
+        if (chains().contains("app_" + tag)) {
+            found = true;
+            try {
+                CommandRunner.Result res = nft.run(List.of("delete", "chain", "inet", "netmon", "app_" + tag));
+                if (res.exitCode() != 0) throw new FirewallException("nft delete chain failed: " + FirewallBackend.firstLine(res.stdout()));
             } catch (IOException e) {
                 throw new FirewallException("nft could not run: " + e.getMessage());
             } catch (InterruptedException e) {

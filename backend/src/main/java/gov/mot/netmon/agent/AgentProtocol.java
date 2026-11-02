@@ -113,7 +113,9 @@ public final class AgentProtocol {
             @Size(max = 20) String backend,
             @Size(max = 300) String message,
             @Size(max = 32) List<@Size(max = 50) String> protectedAddresses,
-            @Size(max = 500) List<@Pattern(regexp = "^[0-9a-f]{8,16}$") String> ruleTags) {
+            @Size(max = 500) List<@Pattern(regexp = "^[0-9a-f]{8,16}$") String> ruleTags,
+            // Application identities the agent can enforce here (Phase 8), e.g. LINUX_USER.
+            @Size(max = 5) List<@Pattern(regexp = "^(LINUX_USER|WINDOWS_PROGRAM|WINDOWS_SERVICE)$") String> applicationControl) {
     }
 
     /** One entry of the server's neighbour (ARP / NDP) table: an address on a local network and its MAC. */

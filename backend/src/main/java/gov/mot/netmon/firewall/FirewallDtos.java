@@ -17,7 +17,7 @@ public final class FirewallDtos {
     /** What the target reports about its firewall (from the latest agent report). */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record TargetState(boolean agentFirewallEnabled, boolean enforcementAllowedOnServer, String backend, String message,
-            List<String> protectedAddresses, Instant reportedAt, boolean online) {
+            List<String> protectedAddresses, Instant reportedAt, boolean online, List<String> applicationControl) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -65,10 +65,10 @@ public final class FirewallDtos {
     public record RuleView(UUID id, UUID integrationId, String integrationName, String integrationKind, UUID serverId,
             String serverName, String scope, String tag, String action, String direction, String remoteCidr, String localCidr,
             String protocol, String localPort, String remotePort, String reason, String reference, Instant expiresAt,
-            String status, String statusMessage, String modeAtApply, String preview, List<String> warnings, String agentCommand,
+            String status, String statusMessage, String modeAtApply, String preview, List<RuleValidator.Issue> warnings, String agentCommand,
             String requestedBy, Instant requestedAt, String decidedBy, Instant decidedAt, Instant appliedAt,
             Instant lastVerifiedAt, String removalRequestedBy, Instant removalRequestedAt, String removalReason, Instant removedAt,
-            boolean expiring) {
+            boolean expiring, UUID applicationId, String applicationLabel, String appMode, List<AppPolicyValidator.Destination> destinations) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

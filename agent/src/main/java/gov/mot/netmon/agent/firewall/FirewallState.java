@@ -41,8 +41,12 @@ public class FirewallState {
     }
 
     public synchronized void applied(FwRule r, Instant now) {
-        entries.removeIf(e -> e.tag().equals(r.tag()));
-        entries.add(new Entry(r.ruleId(), r.tag(), r.describe(), now, r.expiresAt(), null));
+        applied(r.ruleId(), r.tag(), r.describe(), r.expiresAt(), now);
+    }
+
+    public synchronized void applied(UUID ruleId, String tag, String description, Instant expiresAt, Instant now) {
+        entries.removeIf(e -> e.tag().equals(tag));
+        entries.add(new Entry(ruleId, tag, description, now, expiresAt, null));
         save();
     }
 

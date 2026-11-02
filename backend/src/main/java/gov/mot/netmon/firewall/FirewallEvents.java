@@ -22,6 +22,14 @@ public class FirewallEvents {
     }
 
     static String describe(FirewallRule r) {
+        if (r.isApplication()) {
+            String what = switch (r.getAppMode()) {
+                case "BLOCK_INTERNET" -> "block internet access";
+                case "ALLOW_ONLY" -> "allow only approved destinations";
+                default -> "block listed destinations";
+            };
+            return "application " + r.getApplicationLabel() + ": " + what;
+        }
         StringBuilder b = new StringBuilder(r.getAction().equals("BLOCK") ? "block " : "allow ");
         b.append(r.getDirection().equals("INBOUND") ? "from " : "to ").append(r.getRemoteCidr());
         if (!"ANY".equals(r.getProtocol())) b.append(' ').append(r.getProtocol());
@@ -33,7 +41,7 @@ public class FirewallEvents {
     EventService.Builder base(FirewallRule r, FirewallIntegration i, String type, EventSeverity sev) {
         String server = i.getServerId() == null ? null : servers.findById(i.getServerId()).map(s -> s.getName()).orElse(null);
         return events.event(EventCategory.FIREWALL, type, sev).server(i.getServerId(), server).resource(i.getName())
-                .ip(r.getRemoteCidr().endsWith("/32") || r.getRemoteCidr().endsWith("/128")
+                .ip(r.getRemoteCidr() != null && (r.getRemoteCidr().endsWith("/32") || r.getRemoteCidr().endsWith("/128"))
                         ? r.getRemoteCidr().substring(0, r.getRemoteCidr().indexOf('/')) : null)
                 .correlation(r.getId()).detail("ruleId", r.getId()).detail("tag", r.getTag()).detail("rule", describe(r))
                 .detail("target", i.getName()).detail("mode", r.getModeAtApply());

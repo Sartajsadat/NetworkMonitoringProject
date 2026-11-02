@@ -30,6 +30,24 @@ public interface FirewallBackend {
     /** @return false if the rule was not present */
     boolean remove(String tag) throws FirewallException;
 
+    /** Application identities this firewall can enforce (Phase 8), e.g. LINUX_USER. */
+    default List<String> applicationControl() {
+        return List.of();
+    }
+
+    default String describeApp(AppPolicy p) {
+        return "(" + name() + " cannot match applications)";
+    }
+
+    /** Checks an application policy without changing anything. */
+    default void checkApp(AppPolicy p) throws FirewallException {
+        throw new FirewallException(name() + " cannot match applications by " + p.identityKind());
+    }
+
+    default void applyApp(AppPolicy p) throws FirewallException {
+        throw new FirewallException(name() + " cannot match applications by " + p.identityKind());
+    }
+
     /** Addresses connected to local management ports right now (SSH/RDP/WinRM), if the backend knows them. */
     default List<String> managementSessions() {
         return List.of();

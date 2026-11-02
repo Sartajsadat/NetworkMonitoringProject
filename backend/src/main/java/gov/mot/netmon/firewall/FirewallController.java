@@ -86,9 +86,10 @@ public class FirewallController {
 
     @GetMapping("/api/v1/firewall-rules")
     public Page<RuleView> list(@RequestParam(required = false) UUID integrationId, @RequestParam(required = false) List<String> status,
-            @RequestParam(required = false) String address, @RequestParam(defaultValue = "0") int page,
+            @RequestParam(required = false) String address, @RequestParam(required = false) UUID applicationId,
+            @RequestParam(required = false) String kind, @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size) {
-        return rules.list(integrationId, status, address, page, size);
+        return rules.list(integrationId, status, address, applicationId, kind, page, size);
     }
 
     @GetMapping("/api/v1/firewall-rules/{id}")

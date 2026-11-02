@@ -3,7 +3,7 @@
 Central platform for the Ministry of Telecommunication to monitor ministry-hosted servers,
 analyse network traffic, investigate incidents and (later) manage IP access rules.
 
-> **Status: Phase 7 of 9 done (firewall and IP access control).** Done so far:
+> **Status: Phase 8 of 9 done (application access control).** Done so far:
 > - authentication, users, server inventory and the audit log;
 > - English/Pashto/Dari UI;
 > - monitoring agents for Linux and Windows (live and historical CPU, memory, disk, network,
@@ -13,11 +13,13 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 >   configurable alert rules with acknowledgement;
 > - subnets, an IP address inventory, network devices, and NetFlow v5/v9 / IPFIX traffic analysis;
 > - IP allow/block rules with second-person approval, dry run first, and verified enforcement on
->   server firewalls (nftables, UFW, Windows Defender Firewall).
+>   server firewalls (nftables, UFW, Windows Defender Firewall);
+> - per-application network policies (block internet / allow only / block destinations) enforced on
+>   a Linux account or a Windows program or service, with unsupported cases shown as such.
 >
 > The Windows agent and Windows capture still need a test on a real Windows server: see
 > docs/PHASE-3.md and docs/PHASE-4.md. Centralized logs and the hosted-application inventory
-> (marked "Phase 5b") and application access control (Phase 8) arrive later and are shown in the UI as
+> (marked "Phase 5b") arrive later and are shown in the UI as
 > *not available yet*, never with placeholder numbers.
 
 | Document | Contents |
@@ -35,6 +37,7 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 | [docs/PHASE-6.md](docs/PHASE-6.md) | Subnets, IP inventory, network devices, flow collector, traffic pages |
 | [docs/NETWORK-VISIBILITY.md](docs/NETWORK-VISIBILITY.md) | Host vs mirror-port vs flow visibility; sending NetFlow/IPFIX from routers and firewalls |
 | [docs/PHASE-7.md](docs/PHASE-7.md) | Firewall targets, IP allow/block workflow, real nftables test |
+| [docs/PHASE-8.md](docs/PHASE-8.md) | Application access control: identities, policy types, real test |
 | [docs/FIREWALL.md](docs/FIREWALL.md) | Enabling firewall control, scope, safety checks, statuses, **recovery procedure** |
 | [docs/LANGUAGES-AND-DESIGN.md](docs/LANGUAGES-AND-DESIGN.md) | English / Pashto / Dari, right-to-left layout, design and translation files |
 

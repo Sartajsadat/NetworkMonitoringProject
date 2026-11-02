@@ -85,7 +85,7 @@ public record Report(
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Firewall(boolean enabled, boolean enforcementAllowed, String backend, String message,
-            List<String> protectedAddresses, List<String> ruleTags) {
+            List<String> protectedAddresses, List<String> ruleTags, List<String> applicationControl) {
     }
 
     /** Neighbour (ARP) table entry: an address on a local network and its MAC (Phase 6). */

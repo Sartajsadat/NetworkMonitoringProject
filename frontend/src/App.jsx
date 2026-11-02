@@ -36,6 +36,8 @@ import FirewallIntegrationsPage from './pages/firewall/FirewallIntegrationsPage.
 import FirewallRulesPage from './pages/firewall/FirewallRulesPage.jsx';
 import RuleRequestPage from './pages/firewall/RuleRequestPage.jsx';
 import RuleDetailPage from './pages/firewall/RuleDetailPage.jsx';
+import AppAccessPage from './pages/firewall/AppAccessPage.jsx';
+import AppDetailPage from './pages/firewall/AppDetailPage.jsx';
 
 export default function App() {
   return (
@@ -84,6 +86,8 @@ export default function App() {
         <Route path="ip-policies" element={<FirewallRulesPage />} />
         <Route path="ip-policies/new" element={<ProtectedRoute roles={PERMISSIONS.requestFirewallRules}><RuleRequestPage /></ProtectedRoute>} />
         <Route path="ip-policies/:id" element={<RuleDetailPage />} />
+        <Route path="app-access" element={<AppAccessPage />} />
+        <Route path="app-access/:id" element={<AppDetailPage />} />
         <Route path="users" element={<ProtectedRoute roles={[ROLES.SUPER_ADMIN]}><UsersPage /></ProtectedRoute>} />
         <Route path="audit-logs" element={<ProtectedRoute roles={PERMISSIONS.viewAudit}><AuditLogPage /></ProtectedRoute>} />
         <Route path="account/password" element={<ChangePasswordPage />} />

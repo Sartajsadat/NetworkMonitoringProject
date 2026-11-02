@@ -135,7 +135,7 @@ public class FirewallManager {
         reported.addAll(settings.protectedAddresses());
         if (reported.size() > 32) reported = reported.subList(0, 32);
         if (!settings.enabled()) {
-            c = new Report.Firewall(false, false, null, "Firewall control is not enabled on this server (firewall.enabled)", reported, null);
+            c = new Report.Firewall(false, false, null, "Firewall control is not enabled on this server (firewall.enabled)", reported, null, List.of());
         } else {
             FirewallBackend b = backend();
             List<String> tags = null;
@@ -161,7 +161,7 @@ public class FirewallManager {
             }
             boolean enforce = settings.enforcement() && real(b) && b.problem() == null;
             message += enforce ? "; enforcement allowed" : "; dry run only" + (settings.enforcement() ? "" : " (firewall.enforcement=false)");
-            c = new Report.Firewall(true, enforce, b.name(), message, reported, tags);
+            c = new Report.Firewall(true, enforce, b.name(), message, reported, tags, b.problem() == null ? b.applicationControl() : List.of());
         }
         capability = c;
         return c;
@@ -226,6 +226,17 @@ public class FirewallManager {
             return;
         }
         if (!"APPLY_FIREWALL_RULE".equals(type)) return;
+        if ("APPLICATION".equals(p.path("kind").asText())) {
+            AppPolicy a;
+            try {
+                a = AppPolicy.parse(p);
+            } catch (RuntimeException e) {
+                send(id, "FAILED", "Refused by the agent: " + e.getMessage(), null);
+                return;
+            }
+            applyApp(a);
+            return;
+        }
         FwRule r;
         try {
             r = FwRule.parse(p);
@@ -279,6 +290,52 @@ public class FirewallManager {
             }
         } catch (FirewallBackend.FirewallException e) {
             send(r.ruleId(), "FAILED", e.getMessage(), cmd);
+        }
+        refresh();
+    }
+
+    /** Same rules as for IP rules: local consent, safety, dry run or apply, then read back. */
+    void applyApp(AppPolicy a) {
+        FirewallBackend b = backend();
+        String cmd = b.describeApp(a);
+        String forbidden = a.forbidden(System.getProperty("user.name", ""));
+        if (forbidden != null) {
+            send(a.ruleId(), "FAILED", "Refused by the agent: restricting " + forbidden + " could cut off the server or the agent", cmd);
+            return;
+        }
+        if (!b.applicationControl().contains(a.identityKind())) {
+            send(a.ruleId(), "FAILED", "Not supported here: " + b.name() + " cannot match applications by " + a.identityKind()
+                    + (b.problem() == null ? "" : " (" + b.problem() + ")"), cmd);
+            return;
+        }
+        boolean wantEnforce = "ENFORCE".equals(a.mode());
+        boolean canEnforce = settings.enforcement() && b.problem() == null;
+        if (!wantEnforce || !canEnforce) {
+            String why = !wantEnforce ? "Dry run requested by the platform" : "Enforcement is not allowed on this server (firewall.enforcement=false)";
+            try {
+                b.checkApp(a);
+                send(a.ruleId(), "DRY_RUN", why + ". " + b.name() + " accepted the policy in check mode; nothing was changed.", cmd);
+            } catch (FirewallBackend.FirewallException e) {
+                send(a.ruleId(), "FAILED", e.getMessage(), cmd);
+            }
+            return;
+        }
+        Instant now = clock.instant();
+        if (a.expiresAt() != null && !a.expiresAt().isAfter(now)) {
+            send(a.ruleId(), "FAILED", "The policy had already expired when it arrived", cmd);
+            return;
+        }
+        try {
+            if (!b.tags().contains(a.tag())) b.applyApp(a);
+            if (b.tags().contains(a.tag())) {
+                state.applied(a.ruleId(), a.tag(), a.describe(), a.expiresAt(), now);
+                log.info("Application policy " + a.tag() + " applied: " + a.describe());
+                send(a.ruleId(), "APPLIED", "Verified: the policy is present in " + b.name(), cmd);
+            } else {
+                send(a.ruleId(), "UNVERIFIED", "The command succeeded but the policy was not found when the firewall was read back", cmd);
+            }
+        } catch (FirewallBackend.FirewallException e) {
+            send(a.ruleId(), "FAILED", e.getMessage(), cmd);
         }
         refresh();
     }

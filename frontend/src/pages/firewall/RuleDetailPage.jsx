@@ -9,7 +9,7 @@ import ErrorAlert from '../../components/ErrorAlert.jsx';
 import LoadingSpinner from '../../components/LoadingSpinner.jsx';
 import Modal from '../../components/Modal.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
-import { ModeBadge, RuleStatusBadge, RuleSummary, ScopeNote } from './firewallText.jsx';
+import { ModeBadge, RuleStatusBadge, RuleSummary, ScopeNote, issueText } from './firewallText.jsx';
 
 const REMOVABLE = ['APPLIED', 'DRY_RUN', 'UNVERIFIED', 'FAILED', 'APPROVED'];
 
@@ -40,7 +40,7 @@ function Decision({ kind, rule, onClose, onDone }) {
           {t(`rule.${kind}`)}</button></>)}>
       <form id="rule-decision" onSubmit={go}>
         <p><RuleSummary rule={rule} /></p>
-        <ScopeNote kind={rule.integrationKind} name={rule.integrationKind === 'SERVER_AGENT' ? rule.serverName : rule.integrationName} className="mb-3" />
+        <ScopeNote kind={rule.integrationKind} name={rule.integrationKind === 'SERVER_AGENT' ? rule.serverName : rule.integrationName} app={rule.applicationLabel} className="mb-3" />
         {kind === 'approve' && <div className="alert alert-warning small">{t('rule.approveText')}</div>}
         {kind === 'remove' && <p className="small">{t('rule.removeText')}</p>}
         <label className="form-label" htmlFor="d-text">{required ? t('rule.reasonRequired') : t('rule.comment')}</label>
@@ -97,7 +97,8 @@ export default function RuleDetailPage() {
             <p className="small mb-2">{t(`fwStatusHelp.${r.status}`)}</p>
             {r.statusMessage && <div className="small bg-body-tertiary p-2 rounded nm-ltr" dir="ltr">{r.statusMessage}</div>}
           </div></div>
-          <ScopeNote kind={r.integrationKind} name={r.integrationKind === 'SERVER_AGENT' ? r.serverName : r.integrationName} className="mb-3" />
+          <ScopeNote kind={r.integrationKind} name={r.integrationKind === 'SERVER_AGENT' ? r.serverName : r.integrationName}
+            app={r.applicationLabel} className="mb-3" />
           <div className="card mb-3"><div className="card-body">
             <h2 className="h6">{t('rule.details')}</h2>
             <Row label={t('fw.target')}>{r.integrationKind === 'SERVER_AGENT'
@@ -108,7 +109,7 @@ export default function RuleDetailPage() {
             <Row label={t('fwRules.expires')}>{r.expiresAt ? when(r.expiresAt) : t('fwRules.noExpiry')}</Row>
             <Row label={t('rule.tag')}><span className="nm-mono" dir="ltr">netmon:{r.tag}</span></Row>
             {r.warnings.length > 0 && (
-              <Row label={t('rule.ackWarnings')}><ul className="small mb-0 ps-3">{r.warnings.map((w, n) => <li key={n} dir="ltr" className="text-start">{w}</li>)}</ul></Row>)}
+              <Row label={t('rule.ackWarnings')}><ul className="small mb-0 ps-3">{r.warnings.map((w, n) => <li key={n}>{issueText(t, w)}</li>)}</ul></Row>)}
           </div></div>
           <div className="card"><div className="card-body">
             <h2 className="h6">{t('rule.command')}</h2>
