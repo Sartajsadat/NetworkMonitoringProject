@@ -107,7 +107,7 @@ public final class CaptureDtos {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record AgentTaskView(UUID id, String type, UUID captureId, String interfaceName, String captureFilter,
-            Integer snaplen, Integer durationSeconds, Long maxBytes) {
+            Integer snaplen, Integer durationSeconds, Long maxBytes, java.util.Map<String, Object> firewall) {
     }
 
     public record AgentTasks(List<AgentTaskView> tasks) {

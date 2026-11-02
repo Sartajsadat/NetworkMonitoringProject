@@ -97,7 +97,23 @@ public final class AgentProtocol {
             @Size(max = 30) List<@Valid ProcessInfo> processes,
             @Size(max = 30) List<@Valid CollectorStatus> collectors,
             @Valid Capture capture,
-            @Size(max = 512) List<@Valid Neighbor> neighbors) {
+            @Size(max = 512) List<@Valid Neighbor> neighbors,
+            @Valid Firewall firewall) {
+    }
+
+    /**
+     * Firewall control on the server (Phase 7). {@code enabled}: the server's administrator allowed
+     * the agent to manage firewall rules; {@code enforcementAllowed}: real changes are allowed (else
+     * only dry runs). {@code ruleTags}: NetMon rules currently present (read back from the firewall).
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Firewall(
+            boolean enabled,
+            boolean enforcementAllowed,
+            @Size(max = 20) String backend,
+            @Size(max = 300) String message,
+            @Size(max = 32) List<@Size(max = 50) String> protectedAddresses,
+            @Size(max = 500) List<@Pattern(regexp = "^[0-9a-f]{8,16}$") String> ruleTags) {
     }
 
     /** One entry of the server's neighbour (ARP / NDP) table: an address on a local network and its MAC. */

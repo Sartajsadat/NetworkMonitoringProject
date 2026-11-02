@@ -18,7 +18,8 @@ public enum AlertRuleType {
     SERVICE_NOT_RUNNING(EventCategory.SERVICE, Unit.NONE, 0, 0, true, "SERVICE", true),
     AGENT_DEGRADED(EventCategory.AGENT, Unit.NONE, 0, 0, true, "COLLECTOR", true),
     FAILED_LOGINS(EventCategory.SECURITY, Unit.COUNT, 1, 100_000, true, "IP", false),
-    CAPTURE_STORAGE_HIGH(EventCategory.CAPTURE, Unit.PERCENT, 1, 100, false, null, false);
+    CAPTURE_STORAGE_HIGH(EventCategory.CAPTURE, Unit.PERCENT, 1, 100, false, null, false),
+    FIREWALL_DRIFT(EventCategory.FIREWALL, Unit.NONE, 0, 0, false, null, true);
 
     public enum Unit { PERCENT, BITS_PER_SECOND, RATIO, PER_SECOND, SECONDS, COUNT, NONE }
 

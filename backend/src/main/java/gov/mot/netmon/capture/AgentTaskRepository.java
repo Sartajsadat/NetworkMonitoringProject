@@ -10,4 +10,8 @@ public interface AgentTaskRepository extends JpaRepository<AgentTask, UUID> {
     List<AgentTask> findByServerIdAndStatusOrderByCreatedAt(UUID serverId, String status);
 
     List<AgentTask> findByCaptureIdAndStatus(UUID captureId, String status);
+
+    List<AgentTask> findByFirewallRuleIdAndStatus(UUID firewallRuleId, String status);
+
+    List<AgentTask> findByFirewallRuleIdOrderByCreatedAtDesc(UUID firewallRuleId);
 }

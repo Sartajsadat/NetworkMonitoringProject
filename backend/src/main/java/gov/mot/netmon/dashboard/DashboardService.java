@@ -46,10 +46,13 @@ public class DashboardService {
     private final gov.mot.netmon.alert.AlertService alertService;
     private final gov.mot.netmon.alert.AlertRuleRepository alertRules;
 
+    private final gov.mot.netmon.firewall.FirewallIntegrationRepository firewalls;
+
     public DashboardService(ServerRepository servers, ServerGroupRepository groups, UserRepository users,
             AuditLogRepository auditLogs, SnapshotStore snapshots, gov.mot.netmon.capture.PacketCaptureRepository captures,
             Clock clock, AppProperties props, gov.mot.netmon.alert.AlertService alertService,
-            gov.mot.netmon.alert.AlertRuleRepository alertRules) {
+            gov.mot.netmon.alert.AlertRuleRepository alertRules, gov.mot.netmon.firewall.FirewallIntegrationRepository firewalls) {
+        this.firewalls = firewalls;
         this.alertService = alertService;
         this.alertRules = alertRules;
         this.snapshots = snapshots;
@@ -99,7 +102,8 @@ public class DashboardService {
                 && sn.report().capture().enabled() && sn.report().capture().available()).count();
         long active = captures.countByStatusIn(gov.mot.netmon.capture.CaptureStatus.ACTIVE);
         return new DashboardSummaryResponse(now, all.size(), connectionOut, byStatus, byOs, byEnv, groups.count(),
-                activeUsers, modules(fleet.reportingServers(), captureServers, alertRules.findByEnabledTrue().size()), fleet, active,
+                activeUsers, modules(fleet.reportingServers(), captureServers, alertRules.findByEnabledTrue().size(),
+                        firewalls.findAllByOrderByNameAsc()), fleet, active,
                 security, alertService.counts());
     }
 
@@ -138,7 +142,9 @@ public class DashboardService {
     }
 
     /** Honest status of each telemetry module in this release. Updated as phases are delivered. */
-    private static List<ModuleStatus> modules(int reportingServers, long captureServers, int enabledRules) {
+    private static List<ModuleStatus> modules(int reportingServers, long captureServers, int enabledRules,
+            List<gov.mot.netmon.firewall.FirewallIntegration> fw) {
+        long enforce = fw.stream().filter(f -> "ENFORCE".equals(f.getMode())).count();
         ModuleStatus metrics = reportingServers > 0
                 ? new ModuleStatus("metrics", "System metrics (CPU, memory, disk, network)", Availability.AVAILABLE,
                         reportingServers + " server(s) reporting live data.")
@@ -156,7 +162,10 @@ public class DashboardService {
                                 enabledRules + " alert rule(s) enabled.")
                         : new ModuleStatus("alerts", "Alerts and event timeline", Availability.NOT_CONFIGURED,
                                 "All alert rules are disabled. Events are still recorded on the timeline."),
-                new ModuleStatus("firewall", "Firewall integrations", Availability.NOT_CONFIGURED,
-                        "No firewall integration is configured. Dry-run adapter arrives in Phase 7."));
+                fw.isEmpty()
+                        ? new ModuleStatus("firewall", "Firewall integrations", Availability.NOT_CONFIGURED,
+                                "No firewall integration is configured.")
+                        : new ModuleStatus("firewall", "Firewall integrations", Availability.AVAILABLE,
+                                fw.size() + " firewall target(s): " + (fw.size() - enforce) + " in dry run, " + enforce + " set to enforce."));
     }
 }

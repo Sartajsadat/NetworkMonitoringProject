@@ -63,6 +63,7 @@ public class RuleEvaluator {
             case SERVICE_NOT_RUNNING, AGENT_DEGRADED -> state(rule, ev, serverNames);
             case FAILED_LOGINS -> logins(rule, ev);
             case CAPTURE_STORAGE_HIGH -> storage(rule, ev);
+            case FIREWALL_DRIFT -> firewallDrift(rule, ev, serverNames);
         }
         return ev;
     }
@@ -268,6 +269,32 @@ public class RuleEvaluator {
         } else {
             ev.value(rule, null, null, pct);
         }
+    }
+
+    /** Rules the platform applied that the server's agent no longer reports (status UNVERIFIED). */
+    private void firewallDrift(AlertRule rule, Evaluation ev, Map<UUID, String> names) {
+        MapSqlParameterSource p = new MapSqlParameterSource();
+        String where = "";
+        if (rule.getServerId() != null) {
+            where = " AND i.server_id = :sid";
+            p.addValue("sid", rule.getServerId());
+        }
+        jdbc.query("""
+                SELECT i.server_id, count(r.id) FILTER (WHERE r.status = 'UNVERIFIED') AS missing,
+                       string_agg(r.tag, ', ' ORDER BY r.tag) FILTER (WHERE r.status = 'UNVERIFIED') AS tags
+                FROM firewall_integrations i LEFT JOIN firewall_rules r ON r.integration_id = i.id
+                WHERE i.server_id IS NOT NULL""" + where + " GROUP BY i.server_id", p, rs -> {
+                    UUID sid = rs.getObject("server_id", UUID.class);
+                    if (!names.containsKey(sid)) return;
+                    ev.checked.add(sid);
+                    long missing = rs.getLong("missing");
+                    if (missing > 0) {
+                        ev.fire(rule, new Hit(sid, names.get(sid), null, (double) missing, missing
+                                + " firewall rule(s) applied by the platform are no longer present on the server (" + rs.getString("tags") + ")"));
+                    } else {
+                        ev.value(rule, sid, null, 0.0);
+                    }
+                });
     }
 
     static String minutes(int seconds) {

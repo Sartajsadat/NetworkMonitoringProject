@@ -63,9 +63,12 @@ public class CaptureAgentService {
         List<AgentTaskView> out = pending.stream().map(t -> {
             t.delivered(now);
             Map<String, Object> p = t.getPayload();
+            if (t.getFirewallRuleId() != null) {
+                return new AgentTaskView(t.getId(), t.getTaskType(), null, null, null, null, null, null, p);
+            }
             return new AgentTaskView(t.getId(), t.getTaskType(), t.getCaptureId(), (String) p.get("interfaceName"),
                     (String) p.get("captureFilter"), asInt(p.get("snaplen")), asInt(p.get("durationSeconds")),
-                    p.get("maxBytes") instanceof Number n ? n.longValue() : null);
+                    p.get("maxBytes") instanceof Number n ? n.longValue() : null, null);
         }).toList();
         return new AgentTasks(out);
     }

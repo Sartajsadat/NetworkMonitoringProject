@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /** Strongly typed view of the {@code app.*} configuration (all values come from the environment). */
 @ConfigurationProperties(prefix = "app")
 public record AppProperties(Security security, Bootstrap bootstrap, Monitoring monitoring, Agents agents, Capture capture, Events events,
-        Alerts alerts, Flows flows) {
+        Alerts alerts, Flows flows, Firewall firewall) {
 
     public record Security(
             String jwtSecret,
@@ -85,5 +85,13 @@ public record AppProperties(Security security, Bootstrap bootstrap, Monitoring m
      */
     public record Flows(boolean enabled, String bindAddress, int netflowPort, int ipfixPort, int maxFlowsPerSecond,
             int queueSize, Duration retention) {
+    }
+
+    /**
+     * @param protectedCidrs addresses no BLOCK rule may cover (the platform itself, management and
+     *                       monitoring networks); the agents add their own platform address
+     * @param taskTimeout    an approved change the agent has not picked up within this time fails
+     */
+    public record Firewall(String protectedCidrs, Duration taskTimeout) {
     }
 }

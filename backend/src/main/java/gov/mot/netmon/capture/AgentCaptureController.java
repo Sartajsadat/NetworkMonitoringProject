@@ -34,7 +34,7 @@ public class AgentCaptureController {
     }
 
     @PostMapping("/tasks")
-    @Operation(summary = "Typed tasks waiting for this agent (START_CAPTURE / STOP_CAPTURE)")
+    @Operation(summary = "Typed tasks waiting for this agent (captures and firewall rules)")
     public AgentTasks tasks(@AuthenticationPrincipal AgentPrincipal agent) {
         return service.pollTasks(agent);
     }

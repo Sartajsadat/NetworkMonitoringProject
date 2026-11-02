@@ -23,6 +23,8 @@ public class AgentTask {
     private UUID serverId;
     @Column(name = "capture_id")
     private UUID captureId;
+    @Column(name = "firewall_rule_id")
+    private UUID firewallRuleId;
     @Column(name = "task_type", nullable = false)
     private String taskType;
     @JdbcTypeCode(SqlTypes.JSON)
@@ -48,6 +50,13 @@ public class AgentTask {
         this.createdAt = now;
     }
 
+    /** APPLY_FIREWALL_RULE / REMOVE_FIREWALL_RULE for one platform-managed rule. */
+    public static AgentTask firewall(UUID serverId, UUID ruleId, String taskType, Map<String, Object> payload, Instant now) {
+        AgentTask t = new AgentTask(serverId, null, taskType, payload, now);
+        t.firewallRuleId = ruleId;
+        return t;
+    }
+
     public void delivered(Instant now) {
         status = "DELIVERED";
         deliveredAt = now;
@@ -61,6 +70,9 @@ public class AgentTask {
     public UUID getServerId() { return serverId; }
     public UUID getCaptureId() { return captureId; }
     public String getTaskType() { return taskType; }
+    public UUID getFirewallRuleId() { return firewallRuleId; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getDeliveredAt() { return deliveredAt; }
     public Map<String, Object> getPayload() { return payload; }
     public String getStatus() { return status; }
 }

@@ -38,13 +38,15 @@ public class AgentReportService {
     private final gov.mot.netmon.event.ReportEventDetector detector;
     private final gov.mot.netmon.event.AgentConnectionMonitor connections;
     private final gov.mot.netmon.network.ReportAddresses addresses;
+    private final gov.mot.netmon.firewall.FirewallVerifier firewall;
     private final Clock clock;
     private final int defaultInterval;
 
     public AgentReportService(AgentRepository agents, ServerRepository servers, ServerAgentConfigRepository configs,
             SnapshotStore snapshots, MetricWriter metricWriter, gov.mot.netmon.event.ReportEventDetector detector,
             gov.mot.netmon.event.AgentConnectionMonitor connections, gov.mot.netmon.network.ReportAddresses addresses,
-            Clock clock, AppProperties props) {
+            gov.mot.netmon.firewall.FirewallVerifier firewall, Clock clock, AppProperties props) {
+        this.firewall = firewall;
         this.addresses = addresses;
         this.detector = detector;
         this.connections = connections;
@@ -78,6 +80,8 @@ public class AgentReportService {
         agent.recordReport(report, ClientInfo.currentIp(), now, errors);
         server.recordAgentReport(report.agentVersion(), errors > 0, now);
 
+        // Firewall verification runs even while metrics are paused: rules stay enforced either way.
+        firewall.onReport(server, report);
         if (!server.acceptsMetrics()) {
             return new ReportResponse(now, false, "Monitoring is " + server.getMonitoringStatus()
                     + " for this server; metrics are not stored.", toProtocolConfig(config, server));

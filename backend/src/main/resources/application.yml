@@ -112,6 +112,9 @@ app:
     max-flows-per-second: ${FLOW_MAX_PER_SECOND:20000}
     queue-size: ${FLOW_QUEUE_SIZE:200000}
     retention: ${FLOWS_RETENTION:P14D}
+  firewall:
+    protected-cidrs: ${FIREWALL_PROTECTED_CIDRS:127.0.0.0/8,::1/128}
+    task-timeout: ${FIREWALL_TASK_TIMEOUT:PT1H}
   alerts:
     evaluation-interval: ${ALERT_EVALUATION_INTERVAL:PT1M}
     resolved-retention: ${ALERTS_RESOLVED_RETENTION:P365D}
