@@ -1,14 +1,132 @@
-{"errors":{"pagefile":"Access is denied. "},
- "os":{"CSName":"APP-WIN-01","Caption":"Microsoft Windows Server 2022 Standard","Version":"10.0.20348","BuildNumber":"20348","OSArchitecture":"64-bit","TotalVisibleMemorySize":16777216,"FreePhysicalMemory":4194304,"LastBootUpTime":"2026-10-31T10:00:00.0000000Z"},
- "cpu":[{"Name":"0","PercentProcessorTime":1050000000,"Timestamp_Sys100NS":132000000100000000},
-        {"Name":"1","PercentProcessorTime":1090000000,"Timestamp_Sys100NS":132000000100000000},
-        {"Name":"_Total","PercentProcessorTime":1070000000,"Timestamp_Sys100NS":132000000100000000}],
- "system":[{"ProcessorQueueLength":5}],
- "disks":[{"DeviceID":"C:","FileSystem":"NTFS","Size":107374182400,"FreeSpace":32212254720}],
- "diskio":[{"Name":"0 C:","DiskReadBytesPersec":11000000,"DiskWriteBytesPersec":2000000,"DiskReadsPersec":200,"DiskWritesPersec":200,"PercentIdleTime":575000000,"Timestamp_Sys100NS":132000000100000000}],
- "adapters":[{"Name":"Ethernet0","InterfaceDescription":"vmxnet3 Ethernet Adapter","Status":"Up","MacAddress":"00-50-56-AA-BB-CC","MtuSize":1500,"Speed":10000000000}],
- "adapterStats":{"Name":"Ethernet0","ReceivedBytes":17500000,"SentBytes":2000000,"ReceivedUnicastPackets":2000,"ReceivedMulticastPackets":10,"ReceivedBroadcastPackets":5,"SentUnicastPackets":1000,"SentMulticastPackets":0,"SentBroadcastPackets":0,"ReceivedDiscardedPackets":10,"ReceivedPacketErrors":0,"OutboundDiscardedPackets":0,"OutboundPacketErrors":0},
- "addresses":[{"InterfaceAlias":"Ethernet0","IPAddress":"10.30.0.15","PrefixLength":24}],
- "services":[{"Name":"w3svc","State":"Stop Pending","StartMode":"Auto","Status":"OK"}],
- "processes":[{"Id":2400,"ProcessName":"w3wp","WorkingSet64":524288000,"CpuSeconds":105.0,"StartTime":"2026-11-01T08:00:00.0000000Z"},
-              {"Id":3100,"ProcessName":"sqlservr","WorkingSet64":2147483648,"CpuSeconds":50.5,"StartTime":"2026-10-31T10:05:00.0000000Z"}]}
+{
+ "errors": {
+  "pagefile": "Access is denied. "
+ },
+ "os": {
+  "CSName": "APP-WIN-01",
+  "Caption": "Microsoft Windows Server 2022 Standard",
+  "Version": "10.0.20348",
+  "BuildNumber": "20348",
+  "OSArchitecture": "64-bit",
+  "TotalVisibleMemorySize": 16777216,
+  "FreePhysicalMemory": 4194304,
+  "LastBootUpTime": "2026-10-31T10:00:00.0000000Z"
+ },
+ "cpu": [
+  {
+   "Name": "0",
+   "PercentProcessorTime": 1050000000,
+   "Timestamp_Sys100NS": 132000000100000000
+  },
+  {
+   "Name": "1",
+   "PercentProcessorTime": 1090000000,
+   "Timestamp_Sys100NS": 132000000100000000
+  },
+  {
+   "Name": "_Total",
+   "PercentProcessorTime": 1070000000,
+   "Timestamp_Sys100NS": 132000000100000000
+  }
+ ],
+ "system": [
+  {
+   "ProcessorQueueLength": 5
+  }
+ ],
+ "disks": [
+  {
+   "DeviceID": "C:",
+   "FileSystem": "NTFS",
+   "Size": 107374182400,
+   "FreeSpace": 32212254720
+  }
+ ],
+ "diskio": [
+  {
+   "Name": "0 C:",
+   "DiskReadBytesPersec": 11000000,
+   "DiskWriteBytesPersec": 2000000,
+   "DiskReadsPersec": 200,
+   "DiskWritesPersec": 200,
+   "PercentIdleTime": 575000000,
+   "Timestamp_Sys100NS": 132000000100000000
+  }
+ ],
+ "adapters": [
+  {
+   "Name": "Ethernet0",
+   "InterfaceDescription": "vmxnet3 Ethernet Adapter",
+   "Status": "Up",
+   "MacAddress": "00-50-56-AA-BB-CC",
+   "MtuSize": 1500,
+   "Speed": 10000000000
+  }
+ ],
+ "adapterStats": {
+  "Name": "Ethernet0",
+  "ReceivedBytes": 17500000,
+  "SentBytes": 2000000,
+  "ReceivedUnicastPackets": 2000,
+  "ReceivedMulticastPackets": 10,
+  "ReceivedBroadcastPackets": 5,
+  "SentUnicastPackets": 1000,
+  "SentMulticastPackets": 0,
+  "SentBroadcastPackets": 0,
+  "ReceivedDiscardedPackets": 10,
+  "ReceivedPacketErrors": 0,
+  "OutboundDiscardedPackets": 0,
+  "OutboundPacketErrors": 0
+ },
+ "addresses": [
+  {
+   "InterfaceAlias": "Ethernet0",
+   "IPAddress": "10.30.0.15",
+   "PrefixLength": 24
+  }
+ ],
+ "services": [
+  {
+   "Name": "w3svc",
+   "State": "Stop Pending",
+   "StartMode": "Auto",
+   "Status": "OK"
+  }
+ ],
+ "processes": [
+  {
+   "Id": 2400,
+   "ProcessName": "w3wp",
+   "WorkingSet64": 524288000,
+   "CpuSeconds": 105.0,
+   "StartTime": "2026-11-01T08:00:00.0000000Z"
+  },
+  {
+   "Id": 3100,
+   "ProcessName": "sqlservr",
+   "WorkingSet64": 2147483648,
+   "CpuSeconds": 50.5,
+   "StartTime": "2026-10-31T10:05:00.0000000Z"
+  }
+ ],
+ "neighbors": [
+  {
+   "IPAddress": "10.20.0.1",
+   "LinkLayerAddress": "00-15-5D-01-02-03",
+   "InterfaceAlias": "Ethernet0",
+   "State": "Reachable"
+  },
+  {
+   "IPAddress": "fe80::1%12",
+   "LinkLayerAddress": "00-15-5D-01-02-04",
+   "InterfaceAlias": "Ethernet0",
+   "State": "Stale"
+  },
+  {
+   "IPAddress": "10.20.0.9",
+   "LinkLayerAddress": "",
+   "InterfaceAlias": "Ethernet0",
+   "State": "Stale"
+  }
+ ]
+}

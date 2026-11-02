@@ -23,7 +23,8 @@ public record Report(
         List<Service> services,
         List<ProcessInfo> processes,
         List<CollectorStatus> collectors,
-        Capture capture) {
+        Capture capture,
+        List<Neighbor> neighbors) {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Host(String hostname, String platform, String osName, String osVersion, String kernel,
@@ -75,6 +76,11 @@ public record Report(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record CaptureInterface(String name, String description) {
+    }
+
+    /** Neighbour (ARP) table entry: an address on a local network and its MAC (Phase 6). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Neighbor(String ip, String mac, String interfaceName, String state) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)

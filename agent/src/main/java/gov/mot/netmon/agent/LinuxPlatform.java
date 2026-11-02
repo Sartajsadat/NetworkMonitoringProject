@@ -36,6 +36,7 @@ public final class LinuxPlatform implements Platform {
                 new DiskCollector(s.procRoot()),
                 new DiskIoCollector(s.procRoot(), s.sysRoot()),
                 new NetworkCollector(s.sysRoot()),
+                new gov.mot.netmon.agent.linux.NeighborCollector(s.procRoot()),
                 new ServiceCollector(CommandRunner.fixed(s.systemctl(), 5), monitoredServices),
                 new ProcessCollector(s.procRoot(), s.etcRoot(), s.clockTicksPerSecond()));
     }

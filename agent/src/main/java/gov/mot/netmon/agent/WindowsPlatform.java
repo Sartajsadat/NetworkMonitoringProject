@@ -47,6 +47,7 @@ public final class WindowsPlatform implements Platform {
                 new WinDiskCollector(),
                 new WinDiskIoCollector(),
                 new WinNetworkCollector(),
+                new gov.mot.netmon.agent.windows.WinNeighborCollector(),
                 new WinServiceCollector(monitoredServices),
                 new WinProcessCollector());
     }

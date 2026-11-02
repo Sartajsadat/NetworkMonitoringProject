@@ -58,6 +58,13 @@ Section 'adapterStats' {
 Section 'addresses' {
     Get-NetIPAddress | Select-Object InterfaceAlias, IPAddress, PrefixLength
 }
+# Neighbour (ARP / NDP) table: addresses on directly connected networks and their MAC (read only).
+Section 'neighbors' {
+    Get-NetNeighbor -ErrorAction Stop |
+        Where-Object { @('Reachable', 'Stale', 'Delay', 'Probe', 'Permanent') -contains [string]$_.State -and $_.LinkLayerAddress -and
+            $_.LinkLayerAddress -ne '00-00-00-00-00-00' -and $_.LinkLayerAddress -ne 'FF-FF-FF-FF-FF-FF' } |
+        Select-Object -First 512 IPAddress, LinkLayerAddress, InterfaceAlias, @{ n = 'State'; e = { [string]$_.State } }
+}
 Section 'services' {
     $wanted = @()
     if ($env:NETMON_SERVICES) { $wanted = $env:NETMON_SERVICES.Split(',') }
