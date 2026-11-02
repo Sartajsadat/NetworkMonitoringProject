@@ -140,7 +140,12 @@ export default function RuleDetailPage() {
           </div></div>
           <div className="card"><div className="card-body small">
             <h2 className="h6">{t('rule.recovery')}</h2>
-            <p className="mb-0">{t('rule.recoveryText')}</p>
+            <p>{t('rule.recoveryText')}</p>
+            <dl className="mb-0">
+              <dt className="fw-normal text-body-secondary">nftables</dt><dd><code className="nm-ltr d-block" dir="ltr">sudo nft delete table inet netmon</code></dd>
+              <dt className="fw-normal text-body-secondary">UFW</dt><dd><code className="nm-ltr d-block" dir="ltr">sudo ufw status numbered</code><code className="nm-ltr d-block" dir="ltr">sudo ufw delete N</code></dd>
+              <dt className="fw-normal text-body-secondary">Windows</dt><dd className="mb-0"><code className="nm-ltr d-block" dir="ltr">Remove-NetFirewallRule -Group NetMon</code></dd>
+            </dl>
           </div></div>
         </div>
       </div>

@@ -275,7 +275,8 @@ class FirewallApiTest extends AgentTestSupport {
         call(superAdmin, put("/api/v1/firewall-integrations/" + id + "/mode"), Map.of("mode", "ENFORCE", "reason", "try it"))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("NOT_SUPPORTED"));
         call(analyst, post("/api/v1/firewall-rules/preview"), rule(id, "203.0.113.0/24", "443", null, false))
-                .andExpect(jsonPath("$.scope").value(org.hamcrest.Matchers.containsString("dry run only")));
+                .andExpect(jsonPath("$.scope").value(org.hamcrest.Matchers.containsString("dry run only")))
+                .andExpect(jsonPath("$.command").value(org.hamcrest.Matchers.containsString("DENY inbound protocol=tcp source=203.0.113.0/24 local-port=443")));
         String ruleId = body(call(analyst, post("/api/v1/firewall-rules"), rule(id, "203.0.113.0/24", "443", null, true))
                 .andExpect(status().isCreated()).andReturn()).get("id").asText();
         call(viewer, post("/api/v1/firewall-rules"), rule(id, "203.0.113.0/24", "443", null, true)).andExpect(status().isForbidden());

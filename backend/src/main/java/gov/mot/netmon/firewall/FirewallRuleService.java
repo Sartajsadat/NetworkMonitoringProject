@@ -106,7 +106,7 @@ public class FirewallRuleService {
     }
 
     private static String backend(TargetState t) {
-        return t == null ? null : t.backend();
+        return t == null ? "CENTRAL" : t.backend();
     }
 
     @Transactional(readOnly = true)
@@ -117,7 +117,7 @@ public class FirewallRuleService {
         String cmd = c.spec() == null ? null : RuleValidator.preview(c.spec(), "<tag>", backend(t));
         String sn = serverName(i);
         return new Preview(c.ok(), c.errorIssues(), c.warningIssues(), scope(i, sn), i.isAgent() ? "SERVER" : "CENTRAL",
-                i.isAgent() ? sn : i.getName(), cmd, dryRun(i, t) ? "DRY_RUN" : "ENFORCE", backend(t));
+                i.isAgent() ? sn : i.getName(), cmd, dryRun(i, t) ? "DRY_RUN" : "ENFORCE", t == null ? null : t.backend());
     }
 
     // ------------------------------------------------------------------ request / decide
@@ -366,7 +366,7 @@ public class FirewallRuleService {
             case "REMOVED", "NOT_PRESENT" -> {
                 if (!"REMOVAL_PENDING".equals(cur)) throw ApiException.conflict("STALE_STATUS", "No removal is pending for this rule");
                 setStatus(rule, i, rule.isExpiring() ? "EXPIRED" : "REMOVED",
-                        "NOT_PRESENT".equals(state) ? "The rule was not present on the server" : s.message(), actor);
+                        s.message() != null ? s.message() : "NOT_PRESENT".equals(state) ? "The rule was not present on the server" : null, actor);
             }
             default -> throw ApiException.badRequest("INVALID_STATE", "Unknown firewall rule state");
         }

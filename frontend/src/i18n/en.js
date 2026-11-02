@@ -1399,7 +1399,7 @@ export default {
   "rule.h.expired": "Expired and removed",
   "rule.timeline": "Events of this rule",
   "rule.recovery": "If the server becomes unreachable",
-  "rule.recoveryText": "Rules with an expiry are removed by the agent itself at that time, even without the platform. On the server console: \"nft delete table inet netmon\" (nftables), \"ufw status numbered\" then \"ufw delete N\" (UFW), or \"Remove-NetFirewallRule -Group NetMon\" (Windows) removes every NetMon rule.",
+  "rule.recoveryText": "Rules with an expiry are removed by the agent itself at that time, even without the platform. On the server console, each of these removes every NetMon rule:",
   "category.FIREWALL": "Firewall",
   "alertType.FIREWALL_DRIFT": "Unexpected firewall change",
   "alertTypeHelp.FIREWALL_DRIFT": "A rule the platform applied is no longer present on the server.",

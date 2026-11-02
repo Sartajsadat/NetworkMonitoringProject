@@ -1398,7 +1398,7 @@ export default {
   "rule.h.expired": "پای ته ورسېده او لرې شوه",
   "rule.timeline": "د دې قاعدې پېښې",
   "rule.recovery": "که سرور ته لاسرسی ونه شي",
-  "rule.recoveryText": "هغه قواعد چې د پای وخت لري، اجنټ یې پخپله په همغه وخت لرې کوي، حتی له پلاتفورم پرته. د سرور په کنسول کې: \"nft delete table inet netmon\" (nftables)، \"ufw status numbered\" بیا \"ufw delete N\" (UFW)، یا \"Remove-NetFirewallRule -Group NetMon\" (Windows) ټول NetMon قواعد لرې کوي.",
+  "rule.recoveryText": "هغه قواعد چې د پای وخت لري، اجنټ یې پخپله په همغه وخت لرې کوي، حتی له پلاتفورم پرته. د سرور په کنسول کې، هر یو له دې کمانډونو ټول NetMon قواعد لرې کوي:",
   "category.FIREWALL": "فایروال",
   "alertType.FIREWALL_DRIFT": "د فایروال ناڅاپي بدلون",
   "alertTypeHelp.FIREWALL_DRIFT": "هغه قاعده چې پلاتفورم پلي کړې وه نور په سرور کې نشته.",

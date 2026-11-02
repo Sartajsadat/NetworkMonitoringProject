@@ -241,11 +241,23 @@ public final class RuleValidator {
         return b.toString();
     }
 
+    /** Vendor-neutral description, for equipment without an adapter. */
+    public static String neutral(RuleSpec s) {
+        StringBuilder b = new StringBuilder(s.block() ? "DENY " : "PERMIT ").append(s.inbound() ? "inbound" : "outbound");
+        b.append(" protocol=").append(s.protocol().toLowerCase(Locale.ROOT));
+        b.append(s.inbound() ? " source=" : " destination=").append(s.remoteCidr());
+        if (s.localCidr() != null) b.append(s.inbound() ? " destination=" : " source=").append(s.localCidr());
+        if (s.localPort() != null) b.append(" local-port=").append(s.localPort());
+        if (s.remotePort() != null) b.append(" remote-port=").append(s.remotePort());
+        return b.toString();
+    }
+
     public static String preview(RuleSpec s, String tag, String backend) {
         return switch (backend == null ? "" : backend) {
             case "NFTABLES" -> "nft " + nftables(s, tag);
             case "UFW" -> ufw(s, tag);
             case "WINDOWS" -> windows(s, tag);
+            case "CENTRAL" -> "(no adapter for this equipment: nothing is sent to it)\nChange for the device administrators: " + neutral(s);
             default -> "(no supported firewall detected on the target: dry run only)\n" + "nft " + nftables(s, tag);
         };
     }

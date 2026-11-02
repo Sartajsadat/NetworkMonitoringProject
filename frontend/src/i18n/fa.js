@@ -1398,7 +1398,7 @@ export default {
   "rule.h.expired": "منقضی و حذف شد",
   "rule.timeline": "رویدادهای این قاعده",
   "rule.recovery": "اگر سرور در دسترس نباشد",
-  "rule.recoveryText": "قواعدی که زمان انقضا دارند، در همان زمان توسط خود اجنت حذف می‌شوند، حتی بدون پلتفورم. در کنسول سرور: \"nft delete table inet netmon\" (nftables)، \"ufw status numbered\" سپس \"ufw delete N\" (UFW)، یا \"Remove-NetFirewallRule -Group NetMon\" (Windows) همهٔ قواعد NetMon را حذف می‌کند.",
+  "rule.recoveryText": "قواعدی که زمان انقضا دارند، در همان زمان توسط خود اجنت حذف می‌شوند، حتی بدون پلتفورم. در کنسول سرور، هر یک از این فرمان‌ها همهٔ قواعد NetMon را حذف می‌کند:",
   "category.FIREWALL": "فایروال",
   "alertType.FIREWALL_DRIFT": "تغییر غیرمنتظرهٔ فایروال",
   "alertTypeHelp.FIREWALL_DRIFT": "قاعده‌ای که پلتفورم اعمال کرده بود دیگر روی سرور نیست.",

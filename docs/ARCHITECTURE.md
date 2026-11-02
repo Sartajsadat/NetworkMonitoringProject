@@ -198,9 +198,12 @@ captures), `alert_rules`, `alerts` (deduplicated: one active row per rule and re
 **Phase 6 tables (done)**: `subnets`, `network_devices` (with flow-exporter counters), `ip_addresses`
 (passively learned, with sources and first/last observed), `network_flows` (INET addresses). See PHASE-6.md.
 
-**Planned tables (later phases)**: `log_entries` (P5b);
-`firewall_integrations`, `firewall_rules`, `access_policy_requests`,
-`access_policy_approvals` (P7); `application_inventory`, `application_access_policies` (P8);
+**Phase 7 tables (done)**: `firewall_integrations` (targets and their dry-run/enforce mode),
+`firewall_rules` (requests are rules in status REQUESTED; scope, preview, warnings, lifecycle
+times), `access_policy_approvals` (decision history). Agent tasks gained APPLY/REMOVE_FIREWALL_RULE.
+See PHASE-7.md and FIREWALL.md.
+
+**Planned tables (later phases)**: `log_entries` (P5b); `application_inventory`, `application_access_policies` (P8);
 `retention_policies`, `notification_settings` (P5/P9).
 
 **Time-series strategy**: `metric_samples` will be a narrow table indexed on
