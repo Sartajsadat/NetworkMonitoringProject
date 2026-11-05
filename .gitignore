@@ -1,10 +1,12 @@
 # secrets
 .env
+.env.local
 *.pem
 *.key
 
 # backend
 backend/target/
+backend/dev-captures/
 *.class
 
 # frontend

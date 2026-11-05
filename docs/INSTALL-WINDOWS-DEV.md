@@ -17,7 +17,16 @@ Administrator rights are needed to install these tools and Docker Desktop. Runni
 frontend does not need them.
 
 ## 2. Run
-PowerShell, in the repository folder:
+**Easiest:** the helper script asks for the database password once, saves it in
+`backend\.env.local` (ignored by Git) and starts the backend; later runs need no typing:
+```powershell
+cd backend
+powershell -ExecutionPolicy Bypass -File .\run-dev.ps1
+```
+(`-Reset` asks for the settings again.) It also stops early with a clear message if port 8080 is
+already in use.
+
+**By hand**, PowerShell, in the repository folder:
 ```powershell
 cd backend
 $env:DB_URL="jdbc:postgresql://localhost:5432/netmon"; $env:DB_USERNAME="netmon"; $env:DB_PASSWORD="choose-a-password"
