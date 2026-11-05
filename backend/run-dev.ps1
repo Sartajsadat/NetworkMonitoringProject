@@ -31,8 +31,11 @@ if (-not (Test-Path $settingsFile)) {
     if ([string]::IsNullOrWhiteSpace($dbName)) { $dbName = 'netmon' }
     $dbPort = Read-Host 'Database port [5432]'
     if ([string]::IsNullOrWhiteSpace($dbPort)) { $dbPort = '5432' }
-    $secure = Read-Host 'Database password (leave empty if PostgreSQL is set to "trust")' -AsSecureString
-    $dbPassword = [Runtime.InteropServices.Marshal]::PtrToStringBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+    # Plain prompt on purpose: the hidden (-AsSecureString) prompt returned an empty value on some PCs.
+    $dbPassword = Read-Host 'Database password (shown while typing; empty only if PostgreSQL is set to "trust")'
+    if ([string]::IsNullOrEmpty($dbPassword)) {
+        Write-Host 'Warning: empty password. This only works if PostgreSQL trusts local connections.' -ForegroundColor Yellow
+    }
     $bytes = New-Object byte[] 48
     [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
     $jwt = [Convert]::ToBase64String($bytes)
@@ -82,7 +85,9 @@ if ($LASTEXITCODE -ne 0) {
         Select-Object -First 8 | ForEach-Object { $_.Line.Trim() }
     if ($why) { $why | ForEach-Object { Write-Host $_ -ForegroundColor Red } } else { Write-Host "See $log" -ForegroundColor Red }
     Write-Host '========================================================' -ForegroundColor Red
-    if ($why -match 'password authentication failed') {
+    if ($why -match 'no password was provided') {
+        Write-Host 'No password is saved: run .\\run-dev.ps1 -Reset and type the database password.' -ForegroundColor Yellow
+    } elseif ($why -match 'password authentication failed') {
         Write-Host 'The database password is wrong: run .\run-dev.ps1 -Reset and type the right one,' -ForegroundColor Yellow
         Write-Host 'or set it in PostgreSQL:  ALTER USER netmon WITH PASSWORD ''...'';' -ForegroundColor Yellow
     } elseif ($why -match 'does not exist') {
