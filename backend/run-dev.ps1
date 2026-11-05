@@ -72,4 +72,23 @@ if ($busy) {
 }
 
 Write-Host "Starting the backend ($env:DB_USERNAME @ $env:DB_URL) ..." -ForegroundColor Green
-& (Join-Path $PSScriptRoot 'mvnw.cmd') spring-boot:run
+$log = Join-Path $PSScriptRoot 'run.log'
+& (Join-Path $PSScriptRoot 'mvnw.cmd') spring-boot:run 2>&1 | Tee-Object -FilePath $log
+if ($LASTEXITCODE -ne 0) {
+    # Maven's last lines only say "BUILD FAILURE"; show the actual reason.
+    Write-Host ''
+    Write-Host '==================== WHY IT STOPPED ====================' -ForegroundColor Red
+    $why = Select-String -Path $log -Pattern 'Caused by:', 'Description:', 'Action:', 'already in use', 'APPLICATION FAILED', 'FATAL:', 'Message    :' |
+        Select-Object -First 8 | ForEach-Object { $_.Line.Trim() }
+    if ($why) { $why | ForEach-Object { Write-Host $_ -ForegroundColor Red } } else { Write-Host "See $log" -ForegroundColor Red }
+    Write-Host '========================================================' -ForegroundColor Red
+    if ($why -match 'password authentication failed') {
+        Write-Host 'The database password is wrong: run .\run-dev.ps1 -Reset and type the right one,' -ForegroundColor Yellow
+        Write-Host 'or set it in PostgreSQL:  ALTER USER netmon WITH PASSWORD ''...'';' -ForegroundColor Yellow
+    } elseif ($why -match 'does not exist') {
+        Write-Host 'The database or user does not exist yet: create it with CREATE USER / CREATE DATABASE (docs/INSTALL-WINDOWS-DEV.md).' -ForegroundColor Yellow
+    } elseif ($why -match 'Connection refused|Connection to localhost') {
+        Write-Host 'PostgreSQL is not running (Services -> postgresql-x64-16 -> Start), or uses another port.' -ForegroundColor Yellow
+    }
+    exit 1
+}
