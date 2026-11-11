@@ -1566,6 +1566,7 @@ export default {
   "health.check.RETENTION": "Retention",
   "health.check.FLOWS": "Flow collector",
   "health.check.COOKIE": "Session cookie",
+  "health.check.PASSWORDS": "Password policy",
   "health.check.CORS": "CORS",
   "health.check.CLOCK": "Clock",
   "health.check.HEAP": "Memory",

@@ -1565,6 +1565,7 @@ export default {
   "health.check.RETENTION": "ساتنه",
   "health.check.FLOWS": "د جریان راټولوونکی",
   "health.check.COOKIE": "د ناستې کوکي",
+  "health.check.PASSWORDS": "د پټنوم پالیسي",
   "health.check.CORS": "CORS",
   "health.check.CLOCK": "ساعت",
   "health.check.HEAP": "حافظه",

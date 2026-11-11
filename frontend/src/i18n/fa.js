@@ -1565,6 +1565,7 @@ export default {
   "health.check.RETENTION": "نگهداری",
   "health.check.FLOWS": "جمع‌آوری جریان",
   "health.check.COOKIE": "کوکی نشست",
+  "health.check.PASSWORDS": "پالیسی رمز عبور",
   "health.check.CORS": "CORS",
   "health.check.CLOCK": "ساعت",
   "health.check.HEAP": "حافظه",

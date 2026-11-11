@@ -22,4 +22,11 @@ class PasswordPolicyTest {
         assertThatThrownBy(() -> policy.validate("onlylowercaseletters", "bob")).isInstanceOf(ApiException.class);
         assertThatThrownBy(() -> policy.validate("Admin-Password-123", "admin")).isInstanceOf(ApiException.class);
     }
+
+    @Test
+    void labSwitchAcceptsAnyNonEmptyPassword() {
+        PasswordPolicy lab = new PasswordPolicy(true);
+        assertThatCode(() -> lab.validate("123", "bob")).doesNotThrowAnyException();
+        assertThatThrownBy(() -> lab.validate("", "bob")).isInstanceOf(ApiException.class);
+    }
 }

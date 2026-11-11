@@ -39,8 +39,11 @@ public class SystemHealthService {
     private final AppProperties props;
     private final FlowCollector flows;
     private final Clock clock;
+    private final gov.mot.netmon.user.PasswordPolicy passwordPolicy;
 
-    public SystemHealthService(JdbcTemplate jdbc, AppProperties props, FlowCollector flows, Clock clock) {
+    public SystemHealthService(JdbcTemplate jdbc, AppProperties props, FlowCollector flows, Clock clock,
+            gov.mot.netmon.user.PasswordPolicy passwordPolicy) {
+        this.passwordPolicy = passwordPolicy;
         this.jdbc = jdbc;
         this.props = props;
         this.flows = flows;
@@ -157,6 +160,9 @@ public class SystemHealthService {
         cfg.put("FIREWALL_PROTECTED_CIDRS", props.firewall().protectedCidrs());
         cfg.put("FIREWALL_TASK_TIMEOUT", props.firewall().taskTimeout().toString());
         cfg.put("FLOW_COLLECTOR_ENABLED", props.flows().enabled());
+        cfg.put("LAB_WEAK_PASSWORDS", passwordPolicy.isLabWeakPasswords());
+        if (passwordPolicy.isLabWeakPasswords()) checks.add(new Check("PASSWORDS", "WARNING",
+                "LAB_WEAK_PASSWORDS=true: the password policy is off. Lab only - remove it before real use."));
         if (!sec.refreshCookieSecure()) checks.add(new Check("COOKIE", "WARNING",
                 "REFRESH_COOKIE_SECURE=false: the session cookie may travel over plain HTTP. Use only for local testing."));
         if (sec.corsAllowedOrigins() != null && sec.corsAllowedOrigins().stream().anyMatch(o -> o.contains("*"))) {
