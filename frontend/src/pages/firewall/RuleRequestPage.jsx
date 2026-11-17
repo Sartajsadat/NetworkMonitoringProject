@@ -19,7 +19,7 @@ export default function RuleRequestPage() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const targets = useApi(() => firewallApi.integrations(), []);
+  const targets = useApi(() => firewallApi.integrations().then((l) => l.filter((i) => i.kind === 'SERVER_AGENT')), []);
   const [f, setF] = useState({
     integrationId: params.get('integrationId') || '', action: 'BLOCK', direction: 'INBOUND', remote: params.get('remote') || '', local: '',
     protocol: 'TCP', localPort: '', remotePort: '', reason: '', reference: '', expiry: '24h', custom: '',

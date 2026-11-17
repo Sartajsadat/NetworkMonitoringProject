@@ -16,8 +16,11 @@ IP rules (dry run, enforce, drift, expiry, recovery), nftables application polic
 agent over TLS, backup/restore, upgrade from the previous release's database.
 
 ## Not supported (by design or pending information)
-- **Central firewalls** (FortiGate, Palo Alto, Cisco, MikroTik…): dry-run review only. Adapters
-  will be built for the ministry's exact models and versions, once they are named.
+- **Physical / central firewalls** (FortiGate, Palo Alto, Cisco, MikroTik…): not managed. NetMon
+  controls only each server's own software firewall through its agent; central firewalls can no
+  longer be added.
+- **The application internet switch** applies directly, without second-person approval (super and
+  network administrators only; audited). IP allow/block rules still need approval.
 - **firewalld** (RHEL family): detected and refused; NetMon does not mix firewall managers.
 - **Application identity by business name or systemd unit:** only Linux accounts and Windows
   programs/services can be enforced (PHASE-8.md explains why).

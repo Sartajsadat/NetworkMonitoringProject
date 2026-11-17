@@ -40,7 +40,8 @@ describe('firewall targets', () => {
     renderWithAuth(<FirewallIntegrationsPage />, { user: makeUser(['NETWORK_ADMIN']) });
     expect(await screen.findByRole('link', { name: 'web-01' })).toHaveAttribute('href', '/servers/s1');
     expect(screen.getByText('This server only')).toBeInTheDocument();
-    expect(screen.getByText('Review only – not applied')).toBeInTheDocument();
+    // Physical (central) firewalls are not managed and not listed.
+    expect(screen.queryByText('Core firewall')).not.toBeInTheDocument();
     expect(screen.getByText('Server allows dry run only', { exact: false })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Enforce…' }));
     expect(screen.getByText('Only a super administrator can turn on enforcement.')).toBeInTheDocument();
@@ -50,7 +51,7 @@ describe('firewall targets', () => {
   it('adds a server target (servers already added are disabled)', async () => {
     firewallApi.createIntegration.mockResolvedValue({});
     renderWithAuth(<FirewallIntegrationsPage />, { user: makeUser(['NETWORK_ADMIN']) });
-    await userEvent.click(await screen.findByRole('button', { name: /add firewall target/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /add server/i }));
     await waitFor(() => expect(screen.getByRole('option', { name: /web-01 \(already added\)/ })).toBeDisabled());
     await userEvent.selectOptions(screen.getByLabelText('Server'), 's2');
     await userEvent.click(screen.getByRole('button', { name: 'Save' }));
@@ -60,7 +61,7 @@ describe('firewall targets', () => {
   it('read-only users see targets but no actions', async () => {
     renderWithAuth(<FirewallIntegrationsPage />, { user: makeUser(['READ_ONLY']) });
     await screen.findByRole('link', { name: 'web-01' });
-    expect(screen.queryByRole('button', { name: /add firewall target/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /add server/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Enforce…' })).not.toBeInTheDocument();
   });
 });

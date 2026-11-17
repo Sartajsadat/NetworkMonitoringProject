@@ -24,4 +24,6 @@ public interface FirewallRuleRepository extends JpaRepository<FirewallRule, UUID
     long countByApplicationIdAndStatusIn(UUID applicationId, Collection<String> statuses);
 
     long countByApplicationId(UUID applicationId);
+
+    List<FirewallRule> findByApplicationIdAndStatusIn(UUID applicationId, Collection<String> statuses);
 }

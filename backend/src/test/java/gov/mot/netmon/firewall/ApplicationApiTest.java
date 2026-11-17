@@ -91,7 +91,8 @@ class ApplicationApiTest extends AgentTestSupport {
                 "identityValue", "payroll")).andExpect(status().isForbidden());
         String id = app("Payroll API", "LINUX_USER", "payroll");
         call(analyst, get("/api/v1/applications/" + id), null).andExpect(jsonPath("$.support.supported").value(false))
-                .andExpect(jsonPath("$.support.reason").value(Matchers.containsString("no firewall target")));
+                .andExpect(jsonPath("$.support.reason").value(Matchers.containsString("not enabled")))
+                .andExpect(jsonPath("$.internet.state").value("ON"));
         call(netAdmin, post("/api/v1/firewall-integrations"), Map.of("serverId", serverId)).andExpect(status().isCreated());
         report(List.of(), List.of(), false); // an agent that cannot match applications (e.g. UFW)
         call(analyst, get("/api/v1/applications/" + id), null).andExpect(jsonPath("$.support.supported").value(false))
@@ -155,11 +156,62 @@ class ApplicationApiTest extends AgentTestSupport {
     }
 
     @Test
+    void internetSwitchTurnsOffAndOnDirectly() throws Exception {
+        String id = app("Payroll API", "LINUX_USER", "payroll");
+        // Not supported yet: the switch refuses and changes nothing.
+        call(netAdmin, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", false))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("APP_CONTROL_UNSUPPORTED"));
+        call(analyst, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", false)).andExpect(status().isForbidden());
+        report(List.of("LINUX_USER"), List.of(), true);
+
+        // Off in test mode: the server target is created automatically, no second approval, checked only.
+        call(netAdmin, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", false)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.internet.state").value("TURNING_OFF"));
+        JsonNode task = body(mvc.perform(post("/api/v1/agent/tasks").header("Authorization", agent)).andReturn()).get("tasks").get(0)
+                .get("firewall");
+        assertThat(task.get("appMode").asText()).isEqualTo("BLOCK_INTERNET");
+        assertThat(task.get("mode").asText()).isEqualTo("DRY_RUN");
+        String ruleId = task.get("ruleId").asText();
+        mvc.perform(post("/api/v1/agent/firewall/rules/" + ruleId + "/status").header("Authorization", agent)
+                .contentType(MediaType.APPLICATION_JSON).content(toJson(Map.of("state", "DRY_RUN", "message", "checked"))))
+                .andExpect(status().isOk());
+        call(analyst, get("/api/v1/applications/" + id), null).andExpect(jsonPath("$.internet.state").value("OFF_TEST"));
+        // Switching off again is a no-op.
+        call(netAdmin, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", false)).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM firewall_rules", Long.class)).isEqualTo(1);
+
+        // On: nothing was on the server in test mode, so it is removed at once.
+        call(netAdmin, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", true))
+                .andExpect(jsonPath("$.internet.state").value("ON"));
+
+        // Live: a super administrator puts the server in enforce mode; Off now waits for the agent's read-back.
+        String fid = body(call(analyst, get("/api/v1/firewall-integrations"), null).andReturn()).get(0).get("id").asText();
+        call(root, put("/api/v1/firewall-integrations/" + fid + "/mode"), Map.of("mode", "ENFORCE", "reason", "Lab LAB-9"))
+                .andExpect(status().isOk());
+        call(netAdmin, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", false));
+        task = body(mvc.perform(post("/api/v1/agent/tasks").header("Authorization", agent)).andReturn()).get("tasks").get(0).get("firewall");
+        assertThat(task.get("mode").asText()).isEqualTo("ENFORCE");
+        String live = task.get("ruleId").asText();
+        mvc.perform(post("/api/v1/agent/firewall/rules/" + live + "/status").header("Authorization", agent)
+                .contentType(MediaType.APPLICATION_JSON).content(toJson(Map.of("state", "APPLIED", "message", "verified"))))
+                .andExpect(status().isOk());
+        call(analyst, get("/api/v1/applications/" + id), null).andExpect(jsonPath("$.internet.state").value("OFF"));
+        call(netAdmin, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", true))
+                .andExpect(jsonPath("$.internet.state").value("TURNING_ON"));
+        mvc.perform(post("/api/v1/agent/firewall/rules/" + live + "/status").header("Authorization", agent)
+                .contentType(MediaType.APPLICATION_JSON).content(toJson(Map.of("state", "REMOVED")))).andExpect(status().isOk());
+        call(analyst, get("/api/v1/applications/" + id), null).andExpect(jsonPath("$.internet.state").value("ON"));
+        assertThat(auditCount("APP_INTERNET_SWITCHED", "SUCCESS")).isEqualTo(4);
+    }
+
+    @Test
     void refusesPoliciesThatCouldCutOffTheServer() throws Exception {
         String rootApp = app("Everything", "LINUX_USER", "root");
         call(netAdmin, post("/api/v1/firewall-integrations"), Map.of("serverId", serverId)).andExpect(status().isCreated());
         report(List.of("LINUX_USER"), List.of(), false);
         call(analyst, post("/api/v1/application-policies/preview"), policy(rootApp, "BLOCK_INTERNET", List.of(), true))
                 .andExpect(jsonPath("$.ok").value(false)).andExpect(jsonPath("$.errors[0].code").value("APP_FORBIDDEN_IDENTITY"));
+        call(netAdmin, put("/api/v1/applications/" + rootApp + "/internet"), Map.of("allowed", false))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("RULE_INVALID"));
     }
 }

@@ -14,11 +14,10 @@ import PageHeader from '../../components/PageHeader.jsx';
 import TimeAgo from '../../components/TimeAgo.jsx';
 import { ModeBadge } from './firewallText.jsx';
 
+/** Adds a server's own (software) firewall. Physical / central firewalls are not managed by NetMon. */
 function AddTarget({ existing, onClose, onSaved }) {
   const { t } = useI18n();
-  const [kind, setKind] = useState('server');
   const [serverId, setServerId] = useState('');
-  const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
@@ -29,44 +28,25 @@ function AddTarget({ existing, onClose, onSaved }) {
     setBusy(true);
     setError(null);
     try {
-      onSaved(await firewallApi.createIntegration(kind === 'server' ? { serverId, description: description || null }
-        : { name, description: description || null }));
+      onSaved(await firewallApi.createIntegration({ serverId, description: description || null }));
     } catch (err) {
       setError(err);
       setBusy(false);
     }
   };
   return (
-    <Modal show size="lg" title={t('fw.add')} onClose={() => !busy && onClose()}
+    <Modal show title={t('fw.add')} onClose={() => !busy && onClose()}
       footer={(<><button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>{t('common.cancel')}</button>
         <button type="submit" form="fw-add" className="btn btn-primary" disabled={busy}>{t('common.save')}</button></>)}>
       <form id="fw-add" onSubmit={save} className="row g-3">
-        <fieldset className="col-12">
-          <legend className="form-label">{t('fw.kind')}</legend>
-          <div className="form-check">
-            <input className="form-check-input" type="radio" id="k-server" checked={kind === 'server'} onChange={() => setKind('server')} />
-            <label className="form-check-label" htmlFor="k-server"><span className="fw-semibold">{t('fw.kind.SERVER_AGENT')}</span>
-              <div className="small text-body-secondary">{t('fw.kindHelp.SERVER_AGENT')}</div></label>
-          </div>
-          <div className="form-check mt-2">
-            <input className="form-check-input" type="radio" id="k-central" checked={kind === 'central'} onChange={() => setKind('central')} />
-            <label className="form-check-label" htmlFor="k-central"><span className="fw-semibold">{t('fw.kind.CENTRAL_DRY_RUN')}</span>
-              <div className="small text-body-secondary">{t('fw.kindHelp.CENTRAL_DRY_RUN')}</div></label>
-          </div>
-        </fieldset>
-        {kind === 'server' ? (
-          <div className="col-12"><label className="form-label" htmlFor="fw-server">{t('fw.server')}</label>
-            <select id="fw-server" className="form-select" required value={serverId} onChange={(e) => setServerId(e.target.value)}>
-              <option value="">{t('fw.chooseServer')}</option>
-              {(servers.data?.content || []).map((s) => (
-                <option key={s.id} value={s.id} disabled={taken.has(s.id)}>{s.name}{taken.has(s.id) ? ` (${t('fw.alreadyAdded')})` : ''}</option>
-              ))}
-            </select></div>
-        ) : (
-          <div className="col-12"><label className="form-label" htmlFor="fw-name">{t('fw.centralName')}</label>
-            <input id="fw-name" className="form-control" required maxLength={120} value={name} onChange={(e) => setName(e.target.value)}
-              placeholder={t('fw.centralNameHint')} /></div>
-        )}
+        <div className="col-12"><label className="form-label" htmlFor="fw-server">{t('fw.server')}</label>
+          <select id="fw-server" className="form-select" required value={serverId} onChange={(e) => setServerId(e.target.value)}>
+            <option value="">{t('fw.chooseServer')}</option>
+            {(servers.data?.content || []).map((s) => (
+              <option key={s.id} value={s.id} disabled={taken.has(s.id)}>{s.name}{taken.has(s.id) ? ` (${t('fw.alreadyAdded')})` : ''}</option>
+            ))}
+          </select>
+          <div className="form-text">{t('fw.kindHelp.SERVER_AGENT')}</div></div>
         <div className="col-12"><label className="form-label" htmlFor="fw-desc">{t('subnets.description')}</label>
           <input id="fw-desc" className="form-control" maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} /></div>
         <div className="col-12"><ErrorAlert error={error} /></div>
@@ -150,7 +130,9 @@ export default function FirewallIntegrationsPage() {
   const { t, formatNumber } = useI18n();
   const { can } = useAuth();
   const canManage = can(PERMISSIONS.manageFirewall);
-  const { data, error, loading, reload } = useApi(() => firewallApi.integrations(), []);
+  const { data: all, error, loading, reload } = useApi(() => firewallApi.integrations(), []);
+  // Only servers' own firewalls are managed; older central (physical) entries are not shown.
+  const data = all && all.filter((i) => i.kind === 'SERVER_AGENT');
   const [adding, setAdding] = useState(false);
   const [mode, setMode] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -208,7 +190,10 @@ export default function FirewallIntegrationsPage() {
           </table>
         </div></div>
       )}
-      <div className="small text-body-secondary mt-3"><i className="bi bi-life-preserver me-1" aria-hidden="true" />{t('fw.recoveryHint')}</div>
+      <div className="small text-body-secondary mt-3 d-flex flex-wrap gap-3">
+        <span><i className="bi bi-life-preserver me-1" aria-hidden="true" />{t('fw.recoveryHint')}</span>
+        <Link to="/ip-policies"><i className="bi bi-shield-lock me-1" aria-hidden="true" />{t('nav.ipPolicies')}</Link>
+      </div>
       {adding && <AddTarget existing={data || []} onClose={() => setAdding(false)} onSaved={() => { setAdding(false); reload(); }} />}
       {mode && <ModeDialog target={mode} onClose={() => setMode(null)} onSaved={() => { setMode(null); reload(); }} />}
       <ConfirmDialog show={Boolean(deleting)} title={t('fw.deleteTitle')} confirmLabel={t('common.delete')} busy={busy}

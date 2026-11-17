@@ -158,6 +158,7 @@ export const appApi = {
   create: (body) => api.post('/applications', body).then((r) => r.data),
   update: (id, body) => api.put(`/applications/${id}`, body).then((r) => r.data),
   remove: (id) => api.delete(`/applications/${id}`),
+  setInternet: (id, allowed) => api.put(`/applications/${id}/internet`, { allowed }).then((r) => r.data),
   preview: (body) => api.post('/application-policies/preview', body).then((r) => r.data),
   request: (body) => api.post('/application-policies', body).then((r) => r.data),
 };

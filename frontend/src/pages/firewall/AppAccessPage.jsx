@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { appApi, serverApi } from '../../api/endpoints.js';
 import { useApi } from '../../api/useApi.js';
@@ -13,6 +13,18 @@ import Modal from '../../components/Modal.jsx';
 import PageHeader from '../../components/PageHeader.jsx';
 
 const KINDS = { LINUX: ['LINUX_USER'], WINDOWS: ['WINDOWS_PROGRAM', 'WINDOWS_SERVICE'] };
+/** States in which the server has not answered yet: the page refreshes itself until it has. */
+export const PENDING_STATES = ['TURNING_OFF', 'TURNING_ON'];
+const STATE_STYLE = {
+  ON: ['text-success', 'globe2'],
+  OFF: ['text-danger', 'slash-circle'],
+  OFF_TEST: ['text-warning-emphasis', 'eye'],
+  TURNING_OFF: ['text-body-secondary', 'hourglass-split'],
+  TURNING_ON: ['text-body-secondary', 'hourglass-split'],
+  FAILED: ['text-danger', 'exclamation-triangle'],
+  WAITING_APPROVAL: ['text-body-secondary', 'clock'],
+  CUSTOM: ['text-body-secondary', 'sliders'],
+};
 
 export function SupportBadge({ support }) {
   const { t } = useI18n();
@@ -29,6 +41,70 @@ export function IdentityText({ kind, value }) {
   return <span>{t(`appAccess.kind.${kind}`)}: <span className="nm-mono" dir="ltr">{value}</span></span>;
 }
 
+/**
+ * The on/off switch for one application. On = internet allowed. Turning it off asks for a
+ * confirmation; the state text always shows what the server has really confirmed.
+ */
+export function InternetSwitch({ app, onChanged }) {
+  const { t } = useI18n();
+  const { can } = useAuth();
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const state = app.internet?.state || 'ON';
+  const allowed = state === 'ON' || state === 'TURNING_ON';
+  const pending = PENDING_STATES.includes(state);
+  // Turning internet back on is always possible; turning it off needs a server that can enforce the identity.
+  const disabled = !can(PERMISSIONS.manageFirewall) || busy || pending || (allowed && !app.support?.supported);
+  const send = async (value) => {
+    setBusy(true);
+    setError(null);
+    try {
+      onChanged(await appApi.setInternet(app.id, value));
+      setConfirming(false);
+    } catch (e) {
+      setError(e);
+      setConfirming(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const [color, icon] = STATE_STYLE[state] || STATE_STYLE.CUSTOM;
+  return (
+    <div>
+      <div className="d-flex align-items-center gap-2">
+        <div className="form-check form-switch mb-0">
+          <input className="form-check-input" type="checkbox" role="switch" id={`net-${app.id}`} style={{ transform: 'scale(1.4)' }}
+            checked={allowed} disabled={disabled} aria-label={t('appAccess.switchLabel', { name: app.name })}
+            onChange={() => (allowed ? setConfirming(true) : send(true))} />
+        </div>
+        <span className={`small fw-semibold ${color}`}>
+          {(pending || busy) ? <span className="spinner-border spinner-border-sm me-1" aria-hidden="true" />
+            : <i className={`bi bi-${icon} me-1`} aria-hidden="true" />}
+          {t(`appAccess.state.${state}`)}
+        </span>
+      </div>
+      {state === 'FAILED' && app.internet?.message && <div className="small text-danger mt-1">{app.internet.message}</div>}
+      {allowed && !app.support?.supported && app.support?.reason && <div className="small text-body-secondary mt-1">{app.support.reason}</div>}
+      <ErrorAlert error={error} />
+      <ConfirmDialog show={confirming} title={t('appAccess.offTitle')} confirmLabel={t('appAccess.offButton')} busy={busy}
+        onConfirm={() => send(false)} onCancel={() => setConfirming(false)}>
+        {t('appAccess.offText', { name: app.name, server: app.serverName || '' })}
+      </ConfirmDialog>
+    </div>
+  );
+}
+
+/** Refresh every few seconds while any switch waits for its server. */
+export function useRefreshWhilePending(apps, reload) {
+  const waiting = (apps || []).some((a) => PENDING_STATES.includes(a?.internet?.state));
+  useEffect(() => {
+    if (!waiting) return undefined;
+    const id = setInterval(reload, 4000);
+    return () => clearInterval(id);
+  }, [waiting, reload]);
+}
+
 export function AppForm({ app, onClose, onSaved }) {
   const { t } = useI18n();
   const servers = useApi(() => serverApi.search({ size: 200, sort: 'name,asc' }), []);
@@ -39,6 +115,11 @@ export function AppForm({ app, onClose, onSaved }) {
   const server = (servers.data?.content || []).find((s) => s.id === f.serverId);
   const kinds = server ? KINDS[server.osFamily] || [] : [];
   const set = (k) => (e) => setF((x) => ({ ...x, [k]: e.target.value }));
+  const chooseServer = (id) => {
+    const s = (servers.data?.content || []).find((x) => x.id === id);
+    const only = s && (KINDS[s.osFamily] || []).length === 1 ? KINDS[s.osFamily][0] : '';
+    setF((x) => ({ ...x, serverId: id, identityKind: only }));
+  };
   const save = async (e) => {
     e.preventDefault();
     setBusy(true);
@@ -58,13 +139,12 @@ export function AppForm({ app, onClose, onSaved }) {
       <form id="app-form" onSubmit={save} className="row g-3">
         <div className="col-md-6"><label className="form-label" htmlFor="ap-server">{t('fw.server')}</label>
           <select id="ap-server" className="form-select" required disabled={Boolean(app)} value={f.serverId}
-            onChange={(e) => setF((x) => ({ ...x, serverId: e.target.value, identityKind: '' }))}>
+            onChange={(e) => chooseServer(e.target.value)}>
             <option value="">{t('fw.chooseServer')}</option>
             {(servers.data?.content || []).map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
           </select></div>
         <div className="col-md-6"><label className="form-label" htmlFor="ap-name">{t('appAccess.name')}</label>
           <input id="ap-name" className="form-control" required maxLength={120} value={f.name} onChange={set('name')} placeholder={t('appAccess.nameHint')} /></div>
-        <div className="col-12"><div className="alert alert-light border small mb-0">{t('appAccess.identityExplain')}</div></div>
         <div className="col-md-5"><label className="form-label" htmlFor="ap-kind">{t('appAccess.identityKind')}</label>
           <select id="ap-kind" className="form-select" required value={f.identityKind} onChange={set('identityKind')} disabled={!server}>
             <option value="">{server ? t('appAccess.chooseKind') : t('appAccess.chooseServerFirst')}</option>
@@ -85,7 +165,7 @@ export function AppForm({ app, onClose, onSaved }) {
 }
 
 export default function AppAccessPage() {
-  const { t, formatNumber } = useI18n();
+  const { t } = useI18n();
   const { can } = useAuth();
   const canManage = can(PERMISSIONS.manageFirewall);
   const { data, error, loading, reload } = useApi(() => appApi.list(), []);
@@ -93,6 +173,8 @@ export default function AppAccessPage() {
   const [deleting, setDeleting] = useState(null);
   const [busy, setBusy] = useState(false);
   const [deleteError, setDeleteError] = useState(null);
+  useRefreshWhilePending(data, reload);
+  const testMode = (data || []).some((a) => a.support?.supported && !a.support.enforcing);
   const remove = async () => {
     setBusy(true);
     setDeleteError(null);
@@ -104,26 +186,24 @@ export default function AppAccessPage() {
         actions={canManage && <button type="button" className="btn btn-sm btn-primary" onClick={() => setAdding(true)}>
           <i className="bi bi-plus-lg me-1" aria-hidden="true" />{t('appAccess.add')}</button>} />
       <div className="alert alert-light border small"><i className="bi bi-info-circle me-1" aria-hidden="true" />{t('appAccess.explain')}</div>
+      {testMode && <div className="alert alert-warning small"><i className="bi bi-eye me-1" aria-hidden="true" />{t('appAccess.testModeNote')}{' '}
+        <Link to="/firewall">{t('fw.title')}</Link></div>}
       <ErrorAlert error={error} onRetry={reload} />
       <ErrorAlert error={deleteError} />
       {!data && loading && <LoadingSpinner />}
-      {data && data.length === 0 && <div className="card"><EmptyState icon="app-indicator" title={t('appAccess.none')}>{t('appAccess.noneHint')}</EmptyState></div>}
+      {data && data.length === 0 && <div className="card"><EmptyState icon="globe2" title={t('appAccess.none')}>{t('appAccess.noneHint')}</EmptyState></div>}
       {data && data.length > 0 && (
         <div className="card"><div className="table-responsive">
           <table className="table nm-table mb-0 align-middle">
-            <thead><tr><th>{t('appAccess.application')}</th><th>{t('fw.server')}</th><th>{t('appAccess.identity')}</th><th>{t('appAccess.support')}</th>
-              <th>{t('appAccess.policies')}</th>{canManage && <th />}</tr></thead>
+            <thead><tr><th>{t('appAccess.application')}</th><th>{t('fw.server')}</th><th>{t('appAccess.internet')}</th>{canManage && <th />}</tr></thead>
             <tbody>
               {data.map((a) => (
                 <tr key={a.id}>
                   <td className="fw-semibold"><Link to={`/app-access/${a.id}`}>{a.name}</Link>
-                    {a.owner && <div className="small text-body-secondary fw-normal">{a.owner}</div>}</td>
+                    <div className="small text-body-secondary fw-normal"><IdentityText kind={a.identityKind} value={a.identityValue} /></div></td>
                   <td><Link to={`/servers/${a.serverId}`}>{a.serverName}</Link></td>
-                  <td className="small"><IdentityText kind={a.identityKind} value={a.identityValue} />
-                    <div className="text-body-secondary">{a.seenProcesses?.length ? t('appAccess.seenRunning', { list: a.seenProcesses.slice(0, 3).join(', ') }) : t('appAccess.notSeen')}</div></td>
-                  <td><SupportBadge support={a.support} />{!a.support?.supported && <div className="small text-body-secondary">{a.support?.reason}</div>}</td>
-                  <td>{formatNumber(a.activePolicies)}</td>
-                  {canManage && <td><button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setDeleting(a)} aria-label={t('common.delete')}>
+                  <td style={{ minWidth: '16rem' }}><InternetSwitch app={a} onChanged={reload} /></td>
+                  {canManage && <td className="text-end"><button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setDeleting(a)} aria-label={t('common.delete')}>
                     <i className="bi bi-trash" aria-hidden="true" /></button></td>}
                 </tr>
               ))}

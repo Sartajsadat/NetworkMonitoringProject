@@ -3,7 +3,9 @@ package gov.mot.netmon.firewall;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.HexFormat;
+import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -17,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.mot.netmon.audit.AuditAction;
 import gov.mot.netmon.audit.AuditService;
+import gov.mot.netmon.capture.AgentTask;
+import gov.mot.netmon.capture.AgentTaskRepository;
 import gov.mot.netmon.common.ApiException;
 import gov.mot.netmon.event.EventSeverity;
 import gov.mot.netmon.firewall.AppDtos.AppRequest;
@@ -52,10 +56,12 @@ public class ApplicationService {
     private final AuditService audit;
     private final ObjectMapper json;
     private final Clock clock;
+    private final AgentTaskRepository tasks;
 
     public ApplicationService(ApplicationRepository apps, ServerRepository servers, FirewallIntegrationRepository integrations,
             FirewallRuleRepository rules, FirewallService firewalls, FirewallRuleService ruleService, FirewallEvents events,
-            SnapshotStore snapshots, AuditService audit, ObjectMapper json, Clock clock) {
+            SnapshotStore snapshots, AuditService audit, ObjectMapper json, Clock clock, AgentTaskRepository tasks) {
+        this.tasks = tasks;
         this.apps = apps;
         this.servers = servers;
         this.integrations = integrations;
@@ -73,11 +79,12 @@ public class ApplicationService {
 
     Support support(Application a) {
         var i = integrations.findByServerId(a.getServerId()).orElse(null);
-        if (i == null) return new Support(false, "This server has no firewall target yet (add it under Firewall integrations)", null, null, false);
+        // No target yet: judge from the agent's report as a not-yet-saved target (the switch creates it, in test mode).
+        if (i == null) i = new FirewallIntegration("Host firewall", "SERVER_AGENT", a.getServerId(), null, null, clock.instant());
         TargetState t = firewalls.target(i);
         String why = FirewallRuleService.appSupport(i, t, a.getIdentityKind());
         boolean enforcing = "ENFORCE".equals(i.getMode()) && t != null && t.enforcementAllowedOnServer();
-        return new Support(why == null, why, i.getId(), i.getMode(), why == null && enforcing);
+        return new Support(why == null, why, i.getCreatedBy() == null ? null : i.getId(), i.getMode(), why == null && enforcing);
     }
 
     /** Processes seen running as this user / program in the latest report: evidence the identity is right. */
@@ -95,7 +102,7 @@ public class ApplicationService {
         Server s = servers.findById(a.getServerId()).orElse(null);
         long active = rules.countByApplicationIdAndStatusIn(a.getId(), FirewallService.RULE_ACTIVE);
         return new AppView(a.getId(), a.getServerId(), s == null ? null : s.getName(), s == null ? null : s.getOsFamily().name(),
-                a.getName(), a.getDescription(), a.getOwner(), a.getIdentityKind(), a.getIdentityValue(), support(a), active, seen(a),
+                a.getName(), a.getDescription(), a.getOwner(), a.getIdentityKind(), a.getIdentityValue(), support(a), active, internet(a), seen(a),
                 a.getCreatedBy(), a.getCreatedAt(), a.getUpdatedBy(), a.getUpdatedAt());
     }
 
@@ -235,6 +242,116 @@ public class ApplicationService {
         events.rule(rule, p.target(), "FIREWALL_RULE_REQUESTED", EventSeverity.INFO,
                 "Application access policy requested by " + user + ": " + FirewallEvents.describe(rule));
         return ruleService.view(rule, p.target());
+    }
+
+    // ------------------------------------------------------------------ internet switch
+
+    /** Rules that still matter for the switch: active ones, plus a failed one until it is retried or cleared. */
+    static final Set<String> SWITCH_RELEVANT;
+    static {
+        Set<String> s = new HashSet<>(FirewallService.RULE_ACTIVE);
+        s.add("FAILED");
+        SWITCH_RELEVANT = Set.copyOf(s);
+    }
+
+    private static boolean isSwitchBlock(FirewallRule r) {
+        return "BLOCK_INTERNET".equals(r.getAppMode()) && (r.getDestinations() == null || "[]".equals(r.getDestinations()));
+    }
+
+    /** What the switch shows, derived only from rule statuses reported by the agent. */
+    AppDtos.Internet internet(Application a) {
+        List<FirewallRule> current = rules.findByApplicationIdAndStatusIn(a.getId(), SWITCH_RELEVANT);
+        List<FirewallRule> live = current.stream().filter(r -> !"REMOVAL_PENDING".equals(r.getStatus())).toList();
+        if (live.isEmpty()) {
+            boolean removing = current.stream().anyMatch(r -> "REMOVAL_PENDING".equals(r.getStatus()));
+            boolean stuck = current.stream().anyMatch(r -> "UNVERIFIED".equals(r.getStatus()));
+            return new AppDtos.Internet(stuck ? "FAILED" : removing ? "TURNING_ON" : "ON", null, null);
+        }
+        FirewallRule r = live.stream().max(java.util.Comparator.comparing(FirewallRule::getRequestedAt)).orElseThrow();
+        if (!isSwitchBlock(r)) {
+            return new AppDtos.Internet("REQUESTED".equals(r.getStatus()) ? "WAITING_APPROVAL" : "CUSTOM", r.getStatusMessage(), r.getId());
+        }
+        String state = switch (r.getStatus()) {
+            case "APPLIED" -> "OFF";
+            case "DRY_RUN" -> "OFF_TEST";
+            case "APPROVED" -> "TURNING_OFF";
+            case "REQUESTED" -> "WAITING_APPROVAL";
+            default -> "FAILED"; // FAILED, UNVERIFIED
+        };
+        return new AppDtos.Internet(state, r.getStatusMessage(), r.getId());
+    }
+
+    /**
+     * The simple on/off switch. Off: a "block internet" policy (private and internal networks stay
+     * reachable) is sent to the server's agent straight away, without a separate request and approval;
+     * it shows as Off only once the agent has read it back from the firewall. On: every policy of the
+     * application is removed. Each switch is audited and on the timeline. Whether the server really
+     * blocks or only checks (test mode) is still decided by the server's firewall mode.
+     */
+    @Transactional
+    public AppView setInternet(UUID id, boolean allowed) {
+        String user = CurrentUser.require().username();
+        Application a = find(id);
+        Server server = servers.findById(a.getServerId()).orElseThrow(() -> ApiException.notFound("Server"));
+        Instant now = clock.instant();
+        List<FirewallRule> current = rules.findByApplicationIdAndStatusIn(id, SWITCH_RELEVANT);
+        if (!allowed && current.stream().anyMatch(r -> isSwitchBlock(r) && Set.of("APPLIED", "DRY_RUN", "APPROVED").contains(r.getStatus()))
+                && current.stream().noneMatch(r -> !isSwitchBlock(r) && !"REMOVAL_PENDING".equals(r.getStatus()))) {
+            return view(a, null); // already off (or turning off)
+        }
+        FirewallIntegration target = null;
+        TargetState state = null;
+        boolean dry = true;
+        if (!allowed) {
+            // Check first, so a refused switch changes nothing.
+            target = firewalls.serverTarget(server, user);
+            state = firewalls.target(target);
+            String unsupported = FirewallRuleService.appSupport(target, state, a.getIdentityKind());
+            if (unsupported != null) throw ApiException.conflict("APP_CONTROL_UNSUPPORTED", unsupported);
+            dry = !"ENFORCE".equals(target.getMode()) || state == null || !state.enforcementAllowedOnServer();
+            AppPolicyValidator.Check c = AppPolicyValidator.check("BLOCK_INTERNET", a.getIdentityKind(), a.getIdentityValue(), List.of(),
+                    null, now, dry);
+            if (!c.ok()) {
+                throw ApiException.badRequest("RULE_INVALID", String.join("; ", c.errorIssues().stream().map(RuleValidator.Issue::text).toList()));
+            }
+        }
+        // Clear whatever is there (older policies, a failed attempt, a request still waiting).
+        String why = allowed ? "Internet turned on with the switch by " + user : "Replaced by the internet switch (" + user + ")";
+        for (FirewallRule r : current) {
+            if ("REMOVAL_PENDING".equals(r.getStatus())) continue;
+            FirewallIntegration ri = firewalls.find(r.getIntegrationId());
+            if ("REQUESTED".equals(r.getStatus())) {
+                r.status("CANCELLED", why, now);
+                audit.event(AuditAction.FIREWALL_RULE_CANCELLED).target("FIREWALL_RULE", r.getId()).detail("rule", FirewallEvents.describe(r))
+                        .reason(why).success();
+                continue;
+            }
+            r.requestRemoval(user, why, false, now);
+            audit.event(AuditAction.FIREWALL_RULE_REMOVAL_REQUESTED).target("FIREWALL_RULE", r.getId()).detail("target", ri.getName())
+                    .detail("rule", FirewallEvents.describe(r)).reason(why).success();
+            ruleService.startRemoval(r, ri, user, now);
+        }
+        if (!allowed) {
+            String tag = newTag();
+            String backend = state == null ? null : state.backend();
+            AppPolicyValidator.Check c = AppPolicyValidator.check("BLOCK_INTERNET", a.getIdentityKind(), a.getIdentityValue(), List.of(),
+                    null, now, dry);
+            FirewallRule rule = FirewallRule.application(target.getId(), tag, a.getId(), a.label(), "BLOCK_INTERNET", "[]",
+                    "Internet turned off with the switch by " + user, null, null,
+                    AppPolicyValidator.preview("BLOCK_INTERNET", a.getIdentityKind(), a.getIdentityValue(), List.of(), tag, backend),
+                    RuleValidator.encode(c.warningIssues()), user, now);
+            rule.decide(user, now);
+            rule.approved(dry ? "DRY_RUN" : "ENFORCE", now);
+            rules.save(rule);
+            ruleService.recordDecision(rule, "APPROVED", user, now, "Internet switch: applied directly");
+            events.rule(rule, target, "FIREWALL_RULE_APPROVED", EventSeverity.INFO, "Internet turned off for " + a.label() + " by " + user
+                    + (dry ? " (test mode: checked only)" : "") + ": " + FirewallEvents.describe(rule));
+            tasks.save(AgentTask.firewall(server.getId(), rule.getId(), "APPLY_FIREWALL_RULE", ruleService.payload(rule, dry, a), now));
+        }
+        audit.event(AuditAction.APP_INTERNET_SWITCHED).target("APPLICATION", id).detail("application", a.label())
+                .detail("server", server.getName()).detail("internet", allowed ? "ON" : "OFF")
+                .detail("mode", allowed ? null : dry ? "DRY_RUN" : "ENFORCE").success();
+        return view(a, null);
     }
 
     private String newTag() {

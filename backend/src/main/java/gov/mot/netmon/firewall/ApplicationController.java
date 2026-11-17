@@ -66,6 +66,13 @@ public class ApplicationController {
         service.delete(id);
     }
 
+    @PutMapping("/api/v1/applications/{id}/internet")
+    @PreAuthorize(FirewallController.MANAGE)
+    @Operation(summary = "Turn the application's internet access on or off on its server's own firewall (applied directly, audited)")
+    public AppView internet(@PathVariable UUID id, @RequestBody AppDtos.InternetRequest r) {
+        return service.setInternet(id, r.allowed());
+    }
+
     @PostMapping("/api/v1/application-policies/preview")
     @PreAuthorize(FirewallController.REQUEST)
     @Operation(summary = "Validate an application policy and show the exact change and whether the server can enforce it")

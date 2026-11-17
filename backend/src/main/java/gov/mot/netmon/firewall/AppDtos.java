@@ -25,8 +25,21 @@ public final class AppDtos {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record AppView(UUID id, UUID serverId, String serverName, String osFamily, String name, String description, String owner,
-            String identityKind, String identityValue, Support support, long activePolicies, List<String> seenProcesses,
+            String identityKind, String identityValue, Support support, long activePolicies, Internet internet, List<String> seenProcesses,
             String createdBy, Instant createdAt, String updatedBy, Instant updatedAt) {
+    }
+
+    /**
+     * The application's internet switch, as the server really reports it. States: ON (no restriction),
+     * TURNING_OFF / TURNING_ON (waiting for the agent), OFF (blocked and read back from the firewall),
+     * OFF_TEST (server in test mode: checked only, nothing blocked), FAILED, WAITING_APPROVAL (an older
+     * policy request still waiting for a decision), CUSTOM (an older advanced policy is active).
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Internet(String state, String message, UUID ruleId) {
+    }
+
+    public record InternetRequest(boolean allowed) {
     }
 
     public record PolicyRequest(@NotNull UUID applicationId, @NotBlank String appMode,

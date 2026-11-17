@@ -96,6 +96,17 @@ public class FirewallService {
         return integrations.findById(id).orElseThrow(() -> ApiException.notFound("Firewall integration"));
     }
 
+    /** The server's host-firewall target, created on first use (by the application internet switch). */
+    FirewallIntegration serverTarget(Server s, String user) {
+        return integrations.findByServerId(s.getId()).orElseGet(() -> {
+            FirewallIntegration i = integrations.save(new FirewallIntegration("Host firewall: " + s.getName(), "SERVER_AGENT", s.getId(),
+                    null, user, clock.instant()));
+            audit.event(AuditAction.FIREWALL_INTEGRATION_CREATED).target("FIREWALL_INTEGRATION", i.getId()).detail("name", i.getName())
+                    .detail("kind", i.getKind()).detail("automatic", true).success();
+            return i;
+        });
+    }
+
     @Transactional
     public IntegrationView create(IntegrationRequest r) {
         String user = CurrentUser.require().username();
@@ -108,10 +119,9 @@ public class FirewallService {
             }
             i = new FirewallIntegration("Host firewall: " + s.getName(), "SERVER_AGENT", s.getId(), blank(r.description()), user, now);
         } else {
-            String name = blank(r.name());
-            if (name == null) throw ApiException.badRequest("NAME_REQUIRED", "Give the central firewall a name");
-            if (integrations.existsByName(name)) throw ApiException.conflict("INTEGRATION_EXISTS", "This name is in use");
-            i = new FirewallIntegration(name, "CENTRAL_DRY_RUN", null, blank(r.description()), user, now);
+            // Physical / central firewalls are not managed by NetMon: only each server's own (software) firewall.
+            throw ApiException.badRequest("CENTRAL_NOT_SUPPORTED",
+                    "NetMon controls only each server's own software firewall through its agent. Choose a server.");
         }
         integrations.save(i);
         audit.event(AuditAction.FIREWALL_INTEGRATION_CREATED).target("FIREWALL_INTEGRATION", i.getId()).detail("name", i.getName())

@@ -268,27 +268,12 @@ class FirewallApiTest extends AgentTestSupport {
     }
 
     @Test
-    void centralFirewallStaysDryRunAndReadOnlyUsersOnlyView() throws Exception {
+    void physicalFirewallsAreNotManagedAndReadOnlyUsersOnlyView() throws Exception {
         String viewer = tokenFor("viewer", RoleCode.READ_ONLY);
-        String id = body(call(netAdmin, post("/api/v1/firewall-integrations"), Map.of("name", "Core firewall (model to be confirmed)"))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.kind").value("CENTRAL_DRY_RUN")).andReturn()).get("id").asText();
-        call(superAdmin, put("/api/v1/firewall-integrations/" + id + "/mode"), Map.of("mode", "ENFORCE", "reason", "try it"))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("NOT_SUPPORTED"));
-        call(analyst, post("/api/v1/firewall-rules/preview"), rule(id, "203.0.113.0/24", "443", null, false))
-                .andExpect(jsonPath("$.scope").value(org.hamcrest.Matchers.containsString("dry run only")))
-                .andExpect(jsonPath("$.command").value(org.hamcrest.Matchers.containsString("DENY inbound protocol=tcp source=203.0.113.0/24 local-port=443")));
-        String ruleId = body(call(analyst, post("/api/v1/firewall-rules"), rule(id, "203.0.113.0/24", "443", null, true))
-                .andExpect(status().isCreated()).andReturn()).get("id").asText();
-        call(viewer, post("/api/v1/firewall-rules"), rule(id, "203.0.113.0/24", "443", null, true)).andExpect(status().isForbidden());
-        call(viewer, get("/api/v1/firewall-rules"), null).andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1));
-        call(netAdmin, post("/api/v1/firewall-rules/" + ruleId + "/approve"), null).andExpect(jsonPath("$.status").value("DRY_RUN"))
-                .andExpect(jsonPath("$.statusMessage").value(org.hamcrest.Matchers.containsString("Dry run only")));
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM agent_tasks", Long.class)).isZero();
-        // The request that was never decided lapses at its expiry.
-        String lapsed = body(call(analyst, post("/api/v1/firewall-rules"), rule(id, "203.0.113.99", "443",
-                Instant.now().plusSeconds(3600), true)).andReturn()).get("id").asText();
-        jdbc.update("UPDATE firewall_rules SET expires_at = now() - interval '1 minute' WHERE id = ?::uuid", lapsed);
-        jobs.run();
-        assertThat(ruleStatus(lapsed)).isEqualTo("EXPIRED");
+        call(netAdmin, post("/api/v1/firewall-integrations"), Map.of("name", "Core firewall"))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("CENTRAL_NOT_SUPPORTED"));
+        call(viewer, post("/api/v1/firewall-integrations"), Map.of("name", "Core firewall")).andExpect(status().isForbidden());
+        call(viewer, get("/api/v1/firewall-rules"), null).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM firewall_integrations", Long.class)).isZero();
     }
 }

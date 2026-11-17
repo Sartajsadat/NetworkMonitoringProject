@@ -13,6 +13,28 @@ support is built and tested with simulated commands; it needs a lab test on Wind
 | Agent (0.7.0) | 58 (4 new: parsing and injection attempts, nftables batch, Windows rules, unsupported backends) |
 | Frontend | 85 (4 new) |
 
+## 0. Simple internet switch (update after Phase 9)
+
+The **Application internet** page shows one on/off switch per application:
+
+- **Off** (after a confirmation) sends a *Block internet access* policy to the server's agent at once.
+  There is no separate request form and no second-person approval; only super and network
+  administrators can use the switch. Private, internal and loopback networks stay reachable, and
+  users can still connect to the application.
+- **On** removes every policy of that application.
+- The state shown is what the server confirmed: *Blocking… / Allowing…* while waiting, *Blocked*
+  once the agent has read the rule back, *Test mode – not really blocked* while the server is in dry
+  run, or *Failed* with the agent's message. The page refreshes itself while waiting.
+- The server's firewall target is created automatically (in test mode) the first time the switch is
+  used. A super administrator makes a server live on **Server firewalls**.
+- Every switch is audited (`APP_INTERNET_SWITCHED`) and on the timeline; the rule history is on the
+  application's page.
+- Only each server's own software firewall is used. Physical/central firewalls can no longer be
+  added (`CENTRAL_NOT_SUPPORTED`). IP allow/block rules remain available as an advanced page linked
+  from Server firewalls, with their approval workflow unchanged.
+
+API: `PUT /api/v1/applications/{id}/internet` with `{"allowed": false}` or `{"allowed": true}`.
+
 ## 1. The key point: what identifies an application
 
 A firewall cannot recognise an application by its business name ("Payroll"). Each application is

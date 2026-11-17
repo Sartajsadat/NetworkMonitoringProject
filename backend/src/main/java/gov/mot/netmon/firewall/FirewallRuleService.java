@@ -234,7 +234,7 @@ public class FirewallRuleService {
         }
     }
 
-    private void recordDecision(FirewallRule rule, String decision, String by, Instant now, String comment) {
+    void recordDecision(FirewallRule rule, String decision, String by, Instant now, String comment) {
         jdbc.update("INSERT INTO access_policy_approvals (rule_id, decision, decided_by, decided_at, comment) VALUES (?, ?, ?, ?, ?)",
                 rule.getId(), decision, by, java.sql.Timestamp.from(now), FirewallService.blank(comment));
     }
