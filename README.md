@@ -130,23 +130,22 @@ CREATE DATABASE netmon OWNER netmon;
 
 ### 2. Backend (port 8080)
 
-Ubuntu / macOS:
-
 ```bash
 cd backend
-export DB_URL=jdbc:postgresql://localhost:5432/netmon DB_USERNAME=netmon DB_PASSWORD=choose-a-password
-export JWT_SECRET="$(openssl rand -base64 48)" REFRESH_COOKIE_SECURE=false
-./mvnw spring-boot:run
+mvn spring-boot:run        # or ./mvnw spring-boot:run (Ubuntu) / .\mvnw.cmd spring-boot:run (Windows)
 ```
 
-Windows PowerShell:
+No environment variables are needed: `spring-boot:run` turns on the `dev` profile
+(`application-dev.yml`) with local defaults (database `netmon`, user `netmon`, password `netmon`,
+a development-only JWT key, plain-HTTP cookies). If your PostgreSQL password is different, create
+`backend/.env.local` (ignored by Git) with one line:
 
-```powershell
-cd backend
-$env:DB_URL="jdbc:postgresql://localhost:5432/netmon"; $env:DB_USERNAME="netmon"; $env:DB_PASSWORD="choose-a-password"
-$env:JWT_SECRET="<paste a base64 value of 48 random bytes>"; $env:REFRESH_COOKIE_SECURE="false"
-.\mvnw.cmd spring-boot:run
 ```
+DB_PASSWORD=your-postgres-password
+```
+
+Any other variable from the table below can be added to that file the same way. Docker and
+production run `java -jar` and never load the `dev` profile.
 
 Flyway creates the schema on start. The setup token is printed in this console.
 

@@ -1,0 +1,20 @@
+# Local development defaults, used ONLY by "mvn spring-boot:run" (the pom turns on the "dev" profile for
+# that command). Docker and production start with "java -jar" and never load this file.
+#
+# Optional: put your own values in backend/.env.local (ignored by Git), one per line, e.g.
+#   DB_PASSWORD=your-postgres-password
+spring:
+  config:
+    import:
+      - optional:file:./.env.local[.properties]
+      - optional:file:./backend/.env.local[.properties]
+  datasource:
+    password: ${DB_PASSWORD:netmon}
+
+app:
+  security:
+    # Fixed development-only key so sign-ins survive restarts. Never used outside "mvn spring-boot:run".
+    jwt-secret: ${JWT_SECRET:KP+H6EZ1nm9hPDuDkhqbNjIRcFL4fdegGx9A8aFRyXCYLUxbazNe6+ya1yOCra74}
+    refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+  capture:
+    storage-dir: ${CAPTURE_STORAGE_DIR:./dev-captures}
