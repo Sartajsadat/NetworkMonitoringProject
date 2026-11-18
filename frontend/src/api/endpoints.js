@@ -163,6 +163,14 @@ export const appApi = {
   request: (body) => api.post('/application-policies', body).then((r) => r.data),
 };
 
+// Website blocking (servers and staff PCs, through each device's hosts file)
+export const websiteApi = {
+  overview: () => api.get('/websites').then((r) => r.data),
+  add: (website, note) => api.post('/websites', { website, note }).then((r) => r.data),
+  setBlocked: (id, blocked) => api.put(`/websites/${id}/blocked`, { blocked }).then((r) => r.data),
+  remove: (id) => api.delete(`/websites/${id}`).then((r) => r.data),
+};
+
 // Platform operations (Phase 9)
 export const opsApi = {
   retention: () => api.get('/retention-policies').then((r) => r.data),

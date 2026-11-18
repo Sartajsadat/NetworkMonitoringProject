@@ -1,0 +1,13 @@
+# NetMon website blocking: copies the agent's blocked-website list into NetMon's section of /etc/hosts.
+# Runs as root for a moment; it can change /etc/hosts and nothing else. The agent itself stays unprivileged.
+[Unit]
+Description=NetMon website blocking - update /etc/hosts
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/netmon-agent/netmon-hosts-apply
+ProtectSystem=strict
+ReadWritePaths=/etc/hosts
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes

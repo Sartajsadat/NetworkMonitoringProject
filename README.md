@@ -40,6 +40,7 @@ analyse network traffic, investigate incidents and (later) manage IP access rule
 | [docs/NETWORK-VISIBILITY.md](docs/NETWORK-VISIBILITY.md) | Host vs mirror-port vs flow visibility; sending NetFlow/IPFIX from routers and firewalls |
 | [docs/PHASE-7.md](docs/PHASE-7.md) | Firewall targets, IP allow/block workflow, real nftables test |
 | [docs/PHASE-8.md](docs/PHASE-8.md) | Application access control: identities, policy types, real test |
+| [docs/WEBSITE-BLOCKING.md](docs/WEBSITE-BLOCKING.md) | **Website blocking** on servers and staff PCs: using it, setting up a device, limits |
 | [docs/FIREWALL.md](docs/FIREWALL.md) | Enabling firewall control, scope, safety checks, statuses, **recovery procedure** |
 | [docs/PHASE-9.md](docs/PHASE-9.md) | Production hardening: what was reviewed, tested and measured |
 | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | **Production deployment**: sizing, TLS, ports, monitoring, upgrade and rollback |

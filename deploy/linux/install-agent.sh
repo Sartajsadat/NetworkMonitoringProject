@@ -2,14 +2,15 @@
 # Installs the NetMon Linux agent as a systemd service and enrolls it.
 #
 #   sudo ./install-agent.sh --jar netmon-agent.jar --url https://netmon.example.gov.af --token <ENROLLMENT_TOKEN> [--ca ministry-ca.pem]
-#                           [--enable-capture [--capture-interfaces eth0,ens192]] [--allow-insecure-http (isolated lab only)]
+#                           [--enable-capture [--capture-interfaces eth0,ens192]] [--enable-website-blocking]
+#                           [--allow-insecure-http (isolated lab only)]
 #
 # What it does: creates the system user "netmon-agent", copies the jar to /opt/netmon-agent,
 # writes /etc/netmon-agent/agent.properties, enrolls with the one-time token, starts the service.
 # It does not open any port and gives the agent no root privileges.
 set -euo pipefail
 
-JAR="" URL="" TOKEN="" CA="" CAPTURE=0 CAPTURE_IFACES="" INSECURE=false
+JAR="" URL="" TOKEN="" CA="" CAPTURE=0 CAPTURE_IFACES="" INSECURE=false WEBSITES=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --jar) JAR="$2"; shift 2 ;;
@@ -19,6 +20,7 @@ while [[ $# -gt 0 ]]; do
     --allow-insecure-http) INSECURE=true; shift ;;   # isolated lab only: plain http:// to the platform
     --enable-capture) CAPTURE=1; shift ;;
     --capture-interfaces) CAPTURE_IFACES="$2"; shift 2 ;;
+    --enable-website-blocking) WEBSITES=1; shift ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -74,5 +76,8 @@ sleep 3
 systemctl --no-pager --lines=5 status netmon-agent || true
 if [[ $CAPTURE -eq 1 ]]; then
   "$SCRIPT_DIR/enable-capture.sh" --interfaces "$CAPTURE_IFACES"
+fi
+if [[ $WEBSITES -eq 1 ]]; then
+  "$SCRIPT_DIR/enable-website-blocking.sh"
 fi
 echo "Installed. Logs: journalctl -u netmon-agent -f"

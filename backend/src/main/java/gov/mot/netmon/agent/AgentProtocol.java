@@ -73,7 +73,8 @@ public final class AgentProtocol {
     }
 
     /** Settings the platform sends back with every report response. */
-    public record AgentConfig(int reportIntervalSeconds, List<String> services, boolean monitoringPaused) {
+    /** {@code blockedSites}: websites every device with website blocking enabled must block (base domains). */
+    public record AgentConfig(int reportIntervalSeconds, List<String> services, boolean monitoringPaused, List<String> blockedSites) {
     }
 
     public record ReportResponse(Instant serverTime, boolean accepted, String note, AgentConfig config) {
@@ -98,7 +99,19 @@ public final class AgentProtocol {
             @Size(max = 30) List<@Valid CollectorStatus> collectors,
             @Valid Capture capture,
             @Size(max = 512) List<@Valid Neighbor> neighbors,
-            @Valid Firewall firewall) {
+            @Valid Firewall firewall,
+            @Valid Websites websites) {
+    }
+
+    /**
+     * Website blocking on the device. {@code enabled}: the device's administrator allowed the agent to
+     * manage NetMon's section of the hosts file; {@code blocked}: base domains read back from that file.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Websites(
+            boolean enabled,
+            @Size(max = 300) String message,
+            @Size(max = 1000) List<@Size(max = 253) String> blocked) {
     }
 
     /**

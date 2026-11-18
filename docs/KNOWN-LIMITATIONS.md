@@ -19,6 +19,9 @@ agent over TLS, backup/restore, upgrade from the previous release's database.
 - **Physical / central firewalls** (FortiGate, Palo Alto, Cisco, MikroTik…): not managed. NetMon
   controls only each server's own software firewall through its agent; central firewalls can no
   longer be added.
+- **Website blocking** works through each device's hosts file: someone with administrator rights on the
+  device, a VPN, a proxy or a direct IP address gets around it, and only the base name, www. and m. are
+  blocked (docs/WEBSITE-BLOCKING.md). Windows and the Linux systemd path unit still need a lab test.
 - **The application internet switch** applies directly, without second-person approval (super and
   network administrators only; audited). IP allow/block rules still need approval.
 - **firewalld** (RHEL family): detected and refused; NetMon does not mix firewall managers.

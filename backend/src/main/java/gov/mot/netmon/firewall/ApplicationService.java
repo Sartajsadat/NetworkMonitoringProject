@@ -342,7 +342,8 @@ public class ApplicationService {
                     RuleValidator.encode(c.warningIssues()), user, now);
             rule.decide(user, now);
             rule.approved(dry ? "DRY_RUN" : "ENFORCE", now);
-            rules.save(rule);
+            // Flush now: the approval record below is written with plain SQL and references this rule.
+            rules.saveAndFlush(rule);
             ruleService.recordDecision(rule, "APPROVED", user, now, "Internet switch: applied directly");
             events.rule(rule, target, "FIREWALL_RULE_APPROVED", EventSeverity.INFO, "Internet turned off for " + a.label() + " by " + user
                     + (dry ? " (test mode: checked only)" : "") + ": " + FirewallEvents.describe(rule));

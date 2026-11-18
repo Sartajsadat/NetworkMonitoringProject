@@ -23,6 +23,7 @@ describe('Sidebar', () => {
     const item = screen.getByText('Logs').closest('[aria-disabled="true"]');
     expect(item).toHaveTextContent('Phase 5b');
     expect(screen.getByRole('link', { name: /application internet/i })).toHaveAttribute('href', '/app-access');
+    expect(screen.getByRole('link', { name: /website blocking/i })).toHaveAttribute('href', '/websites');
     expect(screen.getByRole('link', { name: /server firewalls/i })).toHaveAttribute('href', '/firewall');
     // IP rules are an advanced page reached from Server firewalls, not from the menu.
     expect(screen.queryByRole('link', { name: /ip allow \/ block/i })).not.toBeInTheDocument();

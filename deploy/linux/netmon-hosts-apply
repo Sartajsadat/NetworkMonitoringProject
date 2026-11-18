@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+# NetMon website blocking - root helper. Installed as /usr/lib/netmon-agent/netmon-hosts-apply by
+# enable-website-blocking.sh and run by netmon-hosts.service whenever the (unprivileged) agent changes
+# its request file. It only rewrites NetMon's own section of /etc/hosts; every other line stays as it is.
+# Each line of the request file must be a plain domain name; anything else is ignored.
+set -euo pipefail
+
+REQUEST=${NETMON_HOSTS_REQUEST:-/var/lib/netmon-agent/blocked-sites.txt}
+HOSTS=${NETMON_HOSTS_FILE:-/etc/hosts}
+BEGIN='# BEGIN NetMon website blocking (managed by the NetMon agent - do not edit)'
+END='# END NetMon website blocking'
+RE='^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]([a-z0-9-]{0,61}[a-z0-9])?$'
+
+domains=()
+if [[ -f "$REQUEST" ]]; then
+  while IFS= read -r d || [[ -n "$d" ]]; do
+    d=${d//$'\r'/}
+    [[ -z "$d" || "$d" == localhost || ${#d} -gt 249 ]] && continue
+    [[ "$d" =~ $RE ]] && domains+=("$d")
+    [[ ${#domains[@]} -ge 500 ]] && break
+  done < "$REQUEST"
+fi
+
+new=$(mktemp)
+trap 'rm -f "$new"' EXIT
+# Lines outside NetMon's section, without trailing blank lines.
+awk -v b="$BEGIN" -v e="$END" '
+  $0 == b { skip = 1; next }
+  $0 == e { skip = 0; next }
+  !skip { line[++n] = $0 }
+  END { while (n > 0 && line[n] ~ /^[ \t]*$/) n--; for (i = 1; i <= n; i++) print line[i] }' "$HOSTS" > "$new"
+if [[ ${#domains[@]} -gt 0 ]]; then
+  {
+    echo
+    echo "$BEGIN"
+    printf '%s\n' "${domains[@]}" | sort -u | while read -r d; do
+      printf '0.0.0.0 %s\n0.0.0.0 www.%s\n0.0.0.0 m.%s\n' "$d" "$d" "$d"
+      printf ':: %s\n:: www.%s\n:: m.%s\n' "$d" "$d" "$d"
+    done
+    echo "$END"
+  } >> "$new"
+fi
+
+if ! cmp -s "$new" "$HOSTS"; then
+  cat "$new" > "$HOSTS"   # in place: keeps the file's owner, mode and any symlink
+  # Forget cached answers so the change works at once.
+  resolvectl flush-caches 2>/dev/null || systemd-resolve --flush-caches 2>/dev/null || true
+  nscd -i hosts 2>/dev/null || true
+  echo "NetMon: hosts file now blocks ${#domains[@]} website(s)"
+fi

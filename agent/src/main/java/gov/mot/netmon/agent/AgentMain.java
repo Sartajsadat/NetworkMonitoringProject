@@ -131,6 +131,14 @@ public final class AgentMain {
                 runner::authorization, Clock.systemUTC(), FirewallManager.resolve(settings.platformUrl().getHost()),
                 () -> platform.managementSessions(fs));
         runner.setFirewallStatus(firewall::capability);
+        gov.mot.netmon.agent.websites.WebsiteBlocker websites = new gov.mot.netmon.agent.websites.WebsiteBlocker(settings.websites(),
+                () -> runner.config().blockedSites(), Clock.systemUTC());
+        runner.setWebsiteStatus(websites::status);
+        runner.setOnConfigChange(websites::sync);
+        if (websites.enabled()) {
+            Logger.getLogger(AgentMain.class.getName()).info("Website blocking enabled (hosts file " + settings.websites().hostsFile()
+                    + (settings.websites().direct() ? ", written directly)" : ", written by the netmon-hosts helper)"));
+        }
         capture.setFirewallTasks(firewall::offer);
         firewall.setSelfPoll(!capture.enabled());
         if (firewall.enabled() || capture.enabled()) {

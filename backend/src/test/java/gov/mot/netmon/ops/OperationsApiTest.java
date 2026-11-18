@@ -130,7 +130,7 @@ class OperationsApiTest extends AgentTestSupport {
         mvc.perform(get("/api/v1/system/health").header("Authorization", infra)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.overall").value(Matchers.oneOf("OK", "WARNING", "ERROR")))
                 .andExpect(jsonPath("$.database.version").value(Matchers.startsWith("16")))
-                .andExpect(jsonPath("$.database.schemaVersion").value("8"))
+                .andExpect(jsonPath("$.database.schemaVersion").value("9"))
                 .andExpect(jsonPath("$.checks[?(@.key=='DATABASE')].status").value("OK"))
                 .andExpect(jsonPath("$.largestTables.length()").value(8))
                 .andExpect(jsonPath("$.configuration.REFRESH_COOKIE_SECURE").exists())

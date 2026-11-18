@@ -157,6 +157,7 @@ class ApplicationApiTest extends AgentTestSupport {
 
     @Test
     void internetSwitchTurnsOffAndOnDirectly() throws Exception {
+        long auditBefore = auditCount("APP_INTERNET_SWITCHED", "SUCCESS"); // the audit log is never cleared between tests
         String id = app("Payroll API", "LINUX_USER", "payroll");
         // Not supported yet: the switch refuses and changes nothing.
         call(netAdmin, put("/api/v1/applications/" + id + "/internet"), Map.of("allowed", false))
@@ -201,7 +202,7 @@ class ApplicationApiTest extends AgentTestSupport {
         mvc.perform(post("/api/v1/agent/firewall/rules/" + live + "/status").header("Authorization", agent)
                 .contentType(MediaType.APPLICATION_JSON).content(toJson(Map.of("state", "REMOVED")))).andExpect(status().isOk());
         call(analyst, get("/api/v1/applications/" + id), null).andExpect(jsonPath("$.internet.state").value("ON"));
-        assertThat(auditCount("APP_INTERNET_SWITCHED", "SUCCESS")).isEqualTo(4);
+        assertThat(auditCount("APP_INTERNET_SWITCHED", "SUCCESS") - auditBefore).isEqualTo(4);
     }
 
     @Test

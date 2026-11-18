@@ -101,7 +101,7 @@ public class AgentEnrollmentService {
                 .detail("reEnrollment", reEnroll).detail("reportedHostname", req.hostname())
                 .detail("hostnameMismatch", mismatch).detail("agentVersion", req.agentVersion()).success();
         return new EnrollResponse(agent.getId(), secret, server.getId(), server.getName(),
-                AgentReportService.toProtocolConfig(config, server));
+                AgentReportService.toProtocolConfig(config, server, java.util.List.of()));
     }
 
     /** Called by an authenticated agent. The previous secret keeps working for a grace period. */

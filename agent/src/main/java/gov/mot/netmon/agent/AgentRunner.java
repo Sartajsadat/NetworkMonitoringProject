@@ -82,10 +82,23 @@ public class AgentRunner {
         this.firewallStatus = s;
     }
 
+    private volatile java.util.function.Supplier<Report.Websites> websiteStatus = () -> null;
+    private volatile Runnable onConfigChange = () -> { };
+
+    public void setWebsiteStatus(java.util.function.Supplier<Report.Websites> s) {
+        this.websiteStatus = s;
+    }
+
+    /** Called (on the sender thread) whenever the platform sends different settings. */
+    public void setOnConfigChange(Runnable r) {
+        this.onConfigChange = r;
+    }
+
     private Report build(Instant now) {
         var b = collectors.run(now);
         b.capture = captureStatus.get();
         b.firewall = firewallStatus.get();
+        b.websites = websiteStatus.get();
         return b.build(AgentInfo.VERSION, now, config.get().reportIntervalSeconds());
     }
 
@@ -210,7 +223,9 @@ public class AgentRunner {
             AgentConfig prev = config.getAndSet(next);
             if (!next.equals(prev)) {
                 log.info("Configuration updated: interval=" + next.reportIntervalSeconds() + "s, services="
-                        + next.services() + (next.monitoringPaused() ? ", monitoring paused" : ""));
+                        + next.services() + (next.monitoringPaused() ? ", monitoring paused" : "")
+                        + (next.blockedSites() == null ? "" : ", blocked websites=" + next.blockedSites().size()));
+                onConfigChange.run();
             }
         } catch (Exception e) {
             log.warning("Ignoring malformed configuration from platform: " + e.getMessage());

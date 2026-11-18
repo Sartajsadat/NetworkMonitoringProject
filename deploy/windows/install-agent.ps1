@@ -29,6 +29,9 @@
   instead of LocalService. Without -FirewallEnforce the agent only reports the firewall and checks
   approved rules with -WhatIf (dry run). -FirewallProtect lists addresses that must never be blocked.
   Recovery (removes every NetMon rule): Remove-NetFirewallRule -Group NetMon
+
+  Website blocking is OFF unless -EnableWebsiteBlocking is given (or enable-website-blocking.ps1 is run
+  later). The device then follows the "Website blocking" page through NetMon's section of its hosts file.
 #>
 [CmdletBinding()]
 param(
@@ -46,7 +49,8 @@ param(
     [ValidateRange(1, 102400)] [int] $CaptureMaxMegabytes = 1024,
     [switch] $EnableFirewall,
     [switch] $FirewallEnforce,
-    [string] $FirewallProtect = ''
+    [string] $FirewallProtect = '',
+    [switch] $EnableWebsiteBlocking
 )
 
 $ErrorActionPreference = 'Stop'
@@ -233,6 +237,11 @@ if ($EnableFirewall) {
     # Run as LOCAL SERVICE (least privilege) instead of the default LocalSystem.
     & sc.exe config $ServiceId obj= 'NT AUTHORITY\LocalService' password= '' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Could not set the service account to LOCAL SERVICE.' }
+}
+
+if ($EnableWebsiteBlocking) {
+    Step 'Enabling website blocking'
+    & (Join-Path $PSScriptRoot 'enable-website-blocking.ps1') -NoRestart
 }
 
 Step 'Starting the service'

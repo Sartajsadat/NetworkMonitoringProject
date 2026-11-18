@@ -25,7 +25,8 @@ public record Report(
         List<CollectorStatus> collectors,
         Capture capture,
         List<Neighbor> neighbors,
-        Firewall firewall) {
+        Firewall firewall,
+        Websites websites) {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Host(String hostname, String platform, String osName, String osVersion, String kernel,
@@ -86,6 +87,11 @@ public record Report(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Firewall(boolean enabled, boolean enforcementAllowed, String backend, String message,
             List<String> protectedAddresses, List<String> ruleTags, List<String> applicationControl) {
+    }
+
+    /** Website blocking on this device: enabled locally, any problem, and the websites read back from the hosts file. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Websites(boolean enabled, String message, List<String> blocked) {
     }
 
     /** Neighbour (ARP) table entry: an address on a local network and its MAC (Phase 6). */

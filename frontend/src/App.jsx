@@ -38,6 +38,7 @@ import RuleRequestPage from './pages/firewall/RuleRequestPage.jsx';
 import RuleDetailPage from './pages/firewall/RuleDetailPage.jsx';
 import AppAccessPage from './pages/firewall/AppAccessPage.jsx';
 import AppDetailPage from './pages/firewall/AppDetailPage.jsx';
+import WebsitesPage from './pages/websites/WebsitesPage.jsx';
 import RetentionPage from './pages/admin/RetentionPage.jsx';
 import HealthPage from './pages/admin/HealthPage.jsx';
 
@@ -84,6 +85,7 @@ export default function App() {
         <Route path="ip-addresses/:id" element={<IpDetailPage />} />
         <Route path="network-devices" element={<DevicesPage />} />
         <Route path="traffic" element={<ProtectedRoute roles={PERMISSIONS.viewTraffic}><TrafficPage /></ProtectedRoute>} />
+        <Route path="websites" element={<WebsitesPage />} />
         <Route path="firewall" element={<FirewallIntegrationsPage />} />
         <Route path="ip-policies" element={<FirewallRulesPage />} />
         <Route path="ip-policies/new" element={<ProtectedRoute roles={PERMISSIONS.requestFirewallRules}><RuleRequestPage /></ProtectedRoute>} />

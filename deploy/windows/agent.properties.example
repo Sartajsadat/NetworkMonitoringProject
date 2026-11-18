@@ -33,3 +33,8 @@ firewall.enforcement=false
 # Addresses that must never be blocked here, besides loopback and the platform (comma separated CIDRs).
 firewall.protected-addresses=
 firewall.management-ports=22,3389,5985,5986
+
+# --- Website blocking. OFF unless enabled here (enable-website-blocking.ps1). ---
+# The agent keeps NetMon's marked section of the hosts file equal to the "Website blocking" page.
+websites.enabled=false
+websites.mode=direct

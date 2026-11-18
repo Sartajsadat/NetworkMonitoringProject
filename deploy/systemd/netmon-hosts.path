@@ -1,0 +1,11 @@
+# NetMon website blocking: runs netmon-hosts.service when the agent changes its blocked-website list.
+# Installed by deploy/linux/enable-website-blocking.sh.
+[Unit]
+Description=Watch the NetMon agent's blocked-website list
+
+[Path]
+PathModified=/var/lib/netmon-agent/blocked-sites.txt
+Unit=netmon-hosts.service
+
+[Install]
+WantedBy=multi-user.target
