@@ -236,8 +236,11 @@ if ($EnableFirewall) {
     Write-Warning 'The agent runs as LocalSystem because firewall control is enabled.'
 } else {
     # Run as LOCAL SERVICE (least privilege) instead of the default LocalSystem.
-    & sc.exe config $ServiceId obj= 'NT AUTHORITY\LocalService' password= '' | Out-Null
-    if ($LASTEXITCODE -ne 0) { throw 'Could not set the service account to LOCAL SERVICE.' }
+    # Not sc.exe: Windows PowerShell 5.1 drops the empty password= '' argument, so sc.exe fails.
+    $svc = Get-CimInstance -ClassName Win32_Service -Filter "Name='$ServiceId'"
+    $res = Invoke-CimMethod -InputObject $svc -MethodName Change -Arguments @{
+        StartName = 'NT AUTHORITY\LocalService'; StartPassword = '' }
+    if ($res.ReturnValue -ne 0) { throw "Could not set the service account to LOCAL SERVICE (Win32_Service.Change returned $($res.ReturnValue))." }
 }
 
 Step 'Starting the service'
