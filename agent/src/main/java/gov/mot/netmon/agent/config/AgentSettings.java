@@ -66,7 +66,8 @@ public record AgentSettings(
     public static AgentSettings fromProperties(Properties p) {
         String url = p.getProperty("platform.url", "").trim();
         String ca = p.getProperty("tls.ca-certificate", "").trim();
-        Path stateDir = Path.of(p.getProperty("state.dir", defaultStateDir()));
+        String stateDirValue = p.getProperty("state.dir", "").trim();
+        Path stateDir = Path.of(stateDirValue.isEmpty() ? defaultStateDir() : stateDirValue);
         return new AgentSettings(
                 url.isEmpty() ? null : URI.create(url.endsWith("/") ? url.substring(0, url.length() - 1) : url),
                 ca.isEmpty() ? null : Path.of(ca),

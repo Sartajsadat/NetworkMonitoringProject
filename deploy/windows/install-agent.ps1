@@ -130,7 +130,8 @@ if (-not (Test-Path -LiteralPath $ConfigFile)) {
     $props = @(
         "platform.url=$Url",
         $caLine,
-        'state.dir=' + $StateDir.Replace('\', '/'),
+        # Parentheses needed: ',' binds tighter than '+', which left state.dir empty.
+        ('state.dir=' + $StateDir.Replace('\', '/')),
         'buffer.max-reports=240',
         'credentials.rotate-after-days=30'
     )
