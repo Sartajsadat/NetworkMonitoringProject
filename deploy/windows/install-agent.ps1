@@ -94,7 +94,11 @@ if (-not $JavaPath) {
     if (-not $cmd) { throw 'Java 21 was not found. Install a Java 21 runtime (e.g. Eclipse Temurin 21 JRE) or pass -JavaPath.' }
     $JavaPath = $cmd.Source
 }
-$versionText = (& $JavaPath -version 2>&1 | Out-String)
+# java -version writes to stderr; with 'Stop', Windows PowerShell 5.1 turns that into a terminating error.
+$prevPreference = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+$versionText = (& $JavaPath -version 2>&1 | ForEach-Object { "$_" } | Out-String)
+$ErrorActionPreference = $prevPreference
 if ($versionText -notmatch 'version "(\d+)') { throw "Could not read the Java version from $JavaPath" }
 if ([int]$Matches[1] -lt 21) { throw "Java 21 or newer is required (found $($Matches[1]) at $JavaPath)." }
 
