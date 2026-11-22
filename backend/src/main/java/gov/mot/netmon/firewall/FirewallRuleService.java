@@ -99,7 +99,7 @@ public class FirewallRuleService {
     }
 
     private boolean dryRun(FirewallIntegration i, TargetState t) {
-        return !i.isAgent() || !"ENFORCE".equals(i.getMode()) || t == null || !t.enforcementAllowedOnServer();
+        return !firewalls.enforces(i, t);
     }
 
     private RuleValidator.Check check(FirewallIntegration i, RuleRequest r, TargetState t) {
@@ -146,8 +146,16 @@ public class FirewallRuleService {
                 .detail("warnings", c.warnings().isEmpty() ? null : c.warnings()).reason(rule.getReason()).success();
         events.rule(rule, i, "FIREWALL_RULE_REQUESTED", EventSeverity.INFO,
                 "Firewall rule requested by " + user.username() + " on " + i.getName() + ": " + FirewallEvents.describe(rule));
+        if (approvesAtOnce(user)) return approve(rule, PERSONAL_APPROVAL, true);
         return view(rule, i);
     }
+
+    /** PERSONAL_MODE: a request by an administrator who may approve is approved immediately. */
+    boolean approvesAtOnce(AuthenticatedUser user) {
+        return firewalls.personalMode() && user.roles().stream().anyMatch(APPROVERS::contains);
+    }
+
+    static final String PERSONAL_APPROVAL = "Approved at once (PERSONAL_MODE)";
 
     private String newTag() {
         for (int n = 0; n < 5; n++) {
@@ -169,10 +177,19 @@ public class FirewallRuleService {
      */
     @Transactional
     public RuleView approve(UUID id, String comment) {
+        return approve(find(id), comment, false);
+    }
+
+    /** {@code self}: the requester approves their own request (only in PERSONAL_MODE). */
+    RuleView approve(FirewallRule given, String comment, boolean self) {
+        // A rule saved in this transaction may be a detached copy (save() merges entities with an id):
+        // work on the managed one, and write it first because the approval row (plain SQL) references it.
+        rules.flush();
+        FirewallRule rule = find(given.getId());
         AuthenticatedUser user = CurrentUser.require();
-        FirewallRule rule = find(id);
+        UUID id = rule.getId();
         FirewallIntegration i = firewalls.find(rule.getIntegrationId());
-        requireDecider(user, rule);
+        requireDecider(user, rule, self && firewalls.personalMode());
         TargetState t = firewalls.target(i);
         List<String> problems;
         if (rule.isApplication()) {
@@ -211,7 +228,7 @@ public class FirewallRuleService {
         AuthenticatedUser user = CurrentUser.require();
         FirewallRule rule = find(id);
         FirewallIntegration i = firewalls.find(rule.getIntegrationId());
-        requireDecider(user, rule);
+        requireDecider(user, rule, false);
         if (comment == null || comment.isBlank()) throw ApiException.badRequest("COMMENT_REQUIRED", "Say why the request is rejected");
         Instant now = clock.instant();
         rule.decide(user.username(), now);
@@ -224,12 +241,12 @@ public class FirewallRuleService {
         return view(rule, i);
     }
 
-    private void requireDecider(AuthenticatedUser user, FirewallRule rule) {
+    private void requireDecider(AuthenticatedUser user, FirewallRule rule, boolean selfAllowed) {
         if (!"REQUESTED".equals(rule.getStatus())) throw ApiException.conflict("NOT_PENDING", "This request is no longer waiting for a decision");
         if (user.roles().stream().noneMatch(APPROVERS::contains)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "APPROVER_REQUIRED", "Only a super or network administrator can decide");
         }
-        if (user.username().equals(rule.getRequestedBy())) {
+        if (!selfAllowed && user.username().equals(rule.getRequestedBy())) {
             throw new ApiException(HttpStatus.FORBIDDEN, "SELF_APPROVAL", "A request must be decided by someone other than the requester");
         }
     }

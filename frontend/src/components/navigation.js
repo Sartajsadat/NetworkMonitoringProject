@@ -33,6 +33,7 @@ export const NAV_SECTIONS = [
   {
     title: 'nav.section.accessControl',
     items: [
+      { to: '/internet', label: 'nav.internet', icon: 'toggles', roles: PERMISSIONS.manageFirewall },
       { to: '/firewall', label: 'nav.firewall', icon: 'bricks' },
       { to: '/ip-policies', label: 'nav.ipPolicies', icon: 'shield-lock' },
       { to: '/app-access', label: 'nav.appAccess', icon: 'app-indicator' },

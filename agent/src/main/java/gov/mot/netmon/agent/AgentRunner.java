@@ -82,10 +82,21 @@ public class AgentRunner {
         this.firewallStatus = s;
     }
 
+    private volatile gov.mot.netmon.agent.sites.SiteBlocker sites;
+
+    public void setSiteBlocker(gov.mot.netmon.agent.sites.SiteBlocker s) {
+        this.sites = s;
+    }
+
     private Report build(Instant now) {
         var b = collectors.run(now);
         b.capture = captureStatus.get();
         b.firewall = firewallStatus.get();
+        var sb = sites;
+        if (sb != null) {
+            sb.apply(config.get().blockedSites()); // the list from the last report response
+            b.sites = sb.status();
+        }
         return b.build(AgentInfo.VERSION, now, config.get().reportIntervalSeconds());
     }
 

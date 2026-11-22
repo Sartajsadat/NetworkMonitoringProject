@@ -27,7 +27,8 @@ public record AgentSettings(
         int clockTicksPerSecond,
         Path powershell,
         gov.mot.netmon.agent.capture.CaptureSettings capture,
-        gov.mot.netmon.agent.firewall.FirewallSettings firewall) {
+        gov.mot.netmon.agent.firewall.FirewallSettings firewall,
+        gov.mot.netmon.agent.sites.SiteSettings sites) {
 
     static boolean isWindows() {
         return System.getProperty("os.name", "").toLowerCase().contains("windows");
@@ -82,12 +83,13 @@ public record AgentSettings(
                 Integer.parseInt(p.getProperty("clock.ticks-per-second", "100")),
                 Path.of(p.getProperty("powershell.path", defaultPowerShell())),
                 gov.mot.netmon.agent.capture.CaptureSettings.fromProperties(p, stateDir, isWindows()),
-                gov.mot.netmon.agent.firewall.FirewallSettings.fromProperties(p, stateDir, isWindows()));
+                gov.mot.netmon.agent.firewall.FirewallSettings.fromProperties(p, stateDir, isWindows()),
+                gov.mot.netmon.agent.sites.SiteSettings.fromProperties(p, isWindows()));
     }
 
     public AgentSettings withPlatformUrl(URI url) {
         return new AgentSettings(url, caCertificate, stateDir, procRoot, sysRoot, etcRoot, systemctl, maxBufferedReports,
-                credentialRotation, allowInsecureHttp, clockTicksPerSecond, powershell, capture, firewall);
+                credentialRotation, allowInsecureHttp, clockTicksPerSecond, powershell, capture, firewall, sites);
     }
 
     /** Plain HTTP is refused unless explicitly allowed or talking to this machine (development). */

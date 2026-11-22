@@ -40,10 +40,12 @@ public class SystemHealthService {
     private final FlowCollector flows;
     private final Clock clock;
     private final gov.mot.netmon.user.PasswordPolicy passwordPolicy;
+    private final gov.mot.netmon.firewall.PersonalMode personalMode;
 
     public SystemHealthService(JdbcTemplate jdbc, AppProperties props, FlowCollector flows, Clock clock,
-            gov.mot.netmon.user.PasswordPolicy passwordPolicy) {
+            gov.mot.netmon.user.PasswordPolicy passwordPolicy, gov.mot.netmon.firewall.PersonalMode personalMode) {
         this.passwordPolicy = passwordPolicy;
+        this.personalMode = personalMode;
         this.jdbc = jdbc;
         this.props = props;
         this.flows = flows;
@@ -161,6 +163,9 @@ public class SystemHealthService {
         cfg.put("FIREWALL_TASK_TIMEOUT", props.firewall().taskTimeout().toString());
         cfg.put("FLOW_COLLECTOR_ENABLED", props.flows().enabled());
         cfg.put("LAB_WEAK_PASSWORDS", passwordPolicy.isLabWeakPasswords());
+        cfg.put("PERSONAL_MODE", personalMode.enabled());
+        if (personalMode.enabled()) checks.add(new Check("PERSONAL_MODE", "WARNING",
+                "PERSONAL_MODE=true: firewall changes apply without a second person's approval. Personal use only."));
         if (passwordPolicy.isLabWeakPasswords()) checks.add(new Check("PASSWORDS", "WARNING",
                 "LAB_WEAK_PASSWORDS=true: the password policy is off. Lab only - remove it before real use."));
         if (!sec.refreshCookieSecure()) checks.add(new Check("COOKIE", "WARNING",

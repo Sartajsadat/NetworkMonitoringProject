@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# NetMon website blocking helper. Installed root-owned at /usr/lib/netmon-agent/netmon-hosts by
+# enable-sites.sh; the agent account may run only this program through sudo.
+#
+#   netmon-hosts youtube.com facebook.com     block exactly these sites (replaces the list)
+#   netmon-hosts                              block nothing (removes NetMon's section)
+#
+# Only NetMon's own section of /etc/hosts (between the BEGIN/END marker lines) is rewritten.
+# Every argument must be a plain host name; anything else is refused and nothing is changed.
+set -euo pipefail
+export LC_ALL=C
+
+HOSTS=/etc/hosts
+BEGIN='# BEGIN NetMon blocked websites (managed by the NetMon agent - do not edit)'
+END='# END NetMon blocked websites'
+RE='^([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z][a-z0-9-]{0,61}[a-z0-9]$'
+
+if [[ $# -gt 200 ]]; then echo "too many sites" >&2; exit 2; fi
+for d in "$@"; do
+  if [[ ${#d} -gt 253 || ! "$d" =~ $RE ]]; then echo "invalid site name: $d" >&2; exit 2; fi
+done
+
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+# Everything outside NetMon's section, without trailing blank lines.
+awk -v b="$BEGIN" -v e="$END" '$0==b{s=1;next} $0==e{s=0;next} !s' "$HOSTS" \
+  | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}' > "$tmp"
+if [[ $# -gt 0 ]]; then
+  {
+    [[ -s "$tmp" ]] && echo
+    echo "$BEGIN"
+    for d in "$@"; do
+      names=("$d")
+      [[ "$d" == www.* || "$d" == m.* ]] || names+=("www.$d" "m.$d")
+      for n in "${names[@]}"; do printf '0.0.0.0 %s\n:: %s\n' "$n" "$n"; done
+    done
+    echo "$END"
+  } >> "$tmp"
+fi
+# Write in place (keeps the file's owner and mode; works when /etc/hosts is a bind mount).
+cat "$tmp" > "$HOSTS"

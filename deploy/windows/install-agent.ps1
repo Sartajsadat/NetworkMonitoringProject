@@ -29,6 +29,10 @@
   instead of LocalService. Without -FirewallEnforce the agent only reports the firewall and checks
   approved rules with -WhatIf (dry run). -FirewallProtect lists addresses that must never be blocked.
   Recovery (removes every NetMon rule): Remove-NetFirewallRule -Group NetMon
+
+  Website blocking is OFF unless -EnableSites is given. Blocked sites are written to NetMon's own
+  section of the hosts file, which needs LocalSystem. Remove the section between the
+  "# BEGIN NetMon" and "# END NetMon" lines of C:\Windows\System32\drivers\etc\hosts to undo it by hand.
 #>
 [CmdletBinding()]
 param(
@@ -46,7 +50,8 @@ param(
     [ValidateRange(1, 102400)] [int] $CaptureMaxMegabytes = 1024,
     [switch] $EnableFirewall,
     [switch] $FirewallEnforce,
-    [string] $FirewallProtect = ''
+    [string] $FirewallProtect = '',
+    [switch] $EnableSites
 )
 
 $ErrorActionPreference = 'Stop'
@@ -176,6 +181,13 @@ if ($EnableFirewall) {
     Set-Content -LiteralPath $ConfigFile -Value $lines -Encoding Ascii
 }
 
+if ($EnableSites) {
+    Step 'Enabling website blocking (hosts file)'
+    $lines = @(Get-Content -LiteralPath $ConfigFile | Where-Object { $_ -notmatch '^sites\.enabled=' })
+    $lines += 'sites.enabled=true'
+    Set-Content -LiteralPath $ConfigFile -Value $lines -Encoding Ascii
+}
+
 # --- enrollment ----------------------------------------------------------------
 Step 'Enrolling with the platform'
 & $JavaPath -jar (Join-Path $InstallDir 'netmon-agent.jar') enroll --config $ConfigFile --token $Token
@@ -229,11 +241,11 @@ if (-not (Get-Service -Name $ServiceId -ErrorAction SilentlyContinue)) {
     & $exe install
     if ($LASTEXITCODE -ne 0) { throw 'WinSW could not install the service.' }
 }
-if ($EnableFirewall) {
-    # Windows Defender Firewall can only be changed by an administrator account.
+if ($EnableFirewall -or $EnableSites) {
+    # Windows Defender Firewall and the hosts file can only be changed by an administrator account.
     & sc.exe config $ServiceId obj= 'LocalSystem' | Out-Null
     if ($LASTEXITCODE -ne 0) { throw 'Could not set the service account to LocalSystem.' }
-    Write-Warning 'The agent runs as LocalSystem because firewall control is enabled.'
+    Write-Warning 'The agent runs as LocalSystem because firewall control or website blocking is enabled.'
 } else {
     # Run as LOCAL SERVICE (least privilege) instead of the default LocalSystem.
     # Not sc.exe: Windows PowerShell 5.1 drops the empty password= '' argument, so sc.exe fails.

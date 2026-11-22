@@ -131,6 +131,9 @@ public final class AgentMain {
                 runner::authorization, Clock.systemUTC(), FirewallManager.resolve(settings.platformUrl().getHost()),
                 () -> platform.managementSessions(fs));
         runner.setFirewallStatus(firewall::capability);
+        var sites = gov.mot.netmon.agent.sites.SiteBlocker.forPlatform(settings.sites(), platform.name().equals("WINDOWS"));
+        runner.setSiteBlocker(sites);
+        if (sites.enabled()) Logger.getLogger(AgentMain.class.getName()).info("Website blocking enabled: " + settings.sites().hostsFile());
         capture.setFirewallTasks(firewall::offer);
         firewall.setSelfPoll(!capture.enabled());
         if (firewall.enabled() || capture.enabled()) {

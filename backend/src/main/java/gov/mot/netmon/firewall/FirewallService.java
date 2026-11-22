@@ -39,9 +39,11 @@ public class FirewallService {
     private final AuditService audit;
     private final Clock clock;
     private final AppProperties props;
+    private final PersonalMode personalMode;
 
     public FirewallService(FirewallIntegrationRepository integrations, FirewallRuleRepository rules, ServerRepository servers,
-            SnapshotStore snapshots, AuditService audit, Clock clock, AppProperties props) {
+            SnapshotStore snapshots, AuditService audit, Clock clock, AppProperties props, PersonalMode personalMode) {
+        this.personalMode = personalMode;
         this.integrations = integrations;
         this.rules = rules;
         this.servers = servers;
@@ -73,10 +75,23 @@ public class FirewallService {
         }).orElse(new TargetState(false, false, null, "No report from an agent yet", List.of(), null, false, List.of()));
     }
 
+    /**
+     * Whether approved rules really change this target: an agent target whose server allows
+     * enforcement, and whose platform mode is Enforce (or PERSONAL_MODE is on). Otherwise dry run.
+     */
+    public boolean enforces(FirewallIntegration i, TargetState t) {
+        return i.isAgent() && t != null && t.enforcementAllowedOnServer()
+                && (personalMode.enabled() || "ENFORCE".equals(i.getMode()));
+    }
+
+    public boolean personalMode() {
+        return personalMode.enabled();
+    }
+
     IntegrationView view(FirewallIntegration i) {
         Server s = i.getServerId() == null ? null : servers.findById(i.getServerId()).orElse(null);
         TargetState t = target(i);
-        boolean enforcing = i.isAgent() && "ENFORCE".equals(i.getMode()) && t != null && t.enforcementAllowedOnServer();
+        boolean enforcing = enforces(i, t);
         return new IntegrationView(i.getId(), i.getName(), i.getKind(), i.getServerId(), s == null ? null : s.getName(),
                 s == null ? null : s.getEnvironment().name(), i.getMode(), i.getDescription(), i.getModeChangedBy(),
                 i.getModeChangedAt(), t, rules.countByIntegrationIdAndStatusIn(i.getId(), RULE_ACTIVE), enforcing);

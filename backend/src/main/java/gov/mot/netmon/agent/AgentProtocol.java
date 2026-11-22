@@ -73,7 +73,9 @@ public final class AgentProtocol {
     }
 
     /** Settings the platform sends back with every report response. */
-    public record AgentConfig(int reportIntervalSeconds, List<String> services, boolean monitoringPaused) {
+    /** {@code blockedSites}: websites the agent keeps blocked (null = no instruction, e.g. at enrollment). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record AgentConfig(int reportIntervalSeconds, List<String> services, boolean monitoringPaused, List<String> blockedSites) {
     }
 
     public record ReportResponse(Instant serverTime, boolean accepted, String note, AgentConfig config) {
@@ -98,7 +100,16 @@ public final class AgentProtocol {
             @Size(max = 30) List<@Valid CollectorStatus> collectors,
             @Valid Capture capture,
             @Size(max = 512) List<@Valid Neighbor> neighbors,
-            @Valid Firewall firewall) {
+            @Valid Firewall firewall,
+            @Valid Sites sites) {
+    }
+
+    /** Website blocking on the computer: whether it is enabled there, and which sites are blocked now. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Sites(
+            boolean enabled,
+            @Size(max = 300) String message,
+            @Size(max = 250) List<@Size(max = 253) String> blocked) {
     }
 
     /**

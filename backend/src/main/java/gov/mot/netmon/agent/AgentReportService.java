@@ -41,11 +41,14 @@ public class AgentReportService {
     private final gov.mot.netmon.firewall.FirewallVerifier firewall;
     private final Clock clock;
     private final int defaultInterval;
+    private final gov.mot.netmon.internet.BlockedSiteRepository sites;
 
     public AgentReportService(AgentRepository agents, ServerRepository servers, ServerAgentConfigRepository configs,
             SnapshotStore snapshots, MetricWriter metricWriter, gov.mot.netmon.event.ReportEventDetector detector,
             gov.mot.netmon.event.AgentConnectionMonitor connections, gov.mot.netmon.network.ReportAddresses addresses,
-            gov.mot.netmon.firewall.FirewallVerifier firewall, Clock clock, AppProperties props) {
+            gov.mot.netmon.firewall.FirewallVerifier firewall, Clock clock, AppProperties props,
+            gov.mot.netmon.internet.BlockedSiteRepository sites) {
+        this.sites = sites;
         this.firewall = firewall;
         this.addresses = addresses;
         this.detector = detector;
@@ -84,7 +87,7 @@ public class AgentReportService {
         firewall.onReport(server, report);
         if (!server.acceptsMetrics()) {
             return new ReportResponse(now, false, "Monitoring is " + server.getMonitoringStatus()
-                    + " for this server; metrics are not stored.", toProtocolConfig(config, server));
+                    + " for this server; metrics are not stored.", toProtocolConfig(config, server, blockedSites(server)));
         }
         Report previous = snapshots.find(server.getId()).map(SnapshotStore.Snapshot::report).orElse(null);
         detector.compare(server, previous, report);
@@ -92,11 +95,20 @@ public class AgentReportService {
         int rows = metricWriter.write(server.getId(), report);
         addresses.record(server, report);
         log.debug("Report from {} stored ({} samples, {} collector errors)", server.getName(), rows, errors);
-        return new ReportResponse(now, true, null, toProtocolConfig(config, server));
+        return new ReportResponse(now, true, null, toProtocolConfig(config, server, blockedSites(server)));
     }
 
     static AgentConfig toProtocolConfig(ServerAgentConfig config, Server server) {
+        return toProtocolConfig(config, server, null);
+    }
+
+    static AgentConfig toProtocolConfig(ServerAgentConfig config, Server server, List<String> blockedSites) {
         return new AgentConfig(config.getReportIntervalSeconds(), List.copyOf(config.getMonitoredServices()),
-                !server.acceptsMetrics());
+                !server.acceptsMetrics(), blockedSites);
+    }
+
+    private List<String> blockedSites(Server server) {
+        return sites.findByServerIdAndBlockedTrueOrderByDomainAsc(server.getId()).stream()
+                .map(gov.mot.netmon.internet.BlockedSite::getDomain).toList();
     }
 }
