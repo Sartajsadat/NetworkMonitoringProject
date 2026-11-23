@@ -13,7 +13,7 @@ export default function Sidebar({ open, onNavigate }) {
         <span>{t('app.name')}<small>{t('app.platform')}</small></span>
       </div>
       {NAV_SECTIONS.map((section) => {
-        const items = section.items.filter((i) => !i.roles || can(i.roles));
+        const items = section.items.filter((i) => !i.hidden && (!i.roles || can(i.roles)));
         if (items.length === 0) return null;
         return (
           <div key={section.title}>
