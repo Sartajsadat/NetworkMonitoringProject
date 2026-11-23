@@ -15,7 +15,7 @@ export const NAV_SECTIONS = [
       { to: '/server-groups', label: 'nav.serverGroups', icon: 'collection', hidden: true },
       { to: '/monitoring/cpu-memory', label: 'nav.cpuMemory', icon: 'cpu' },
       { to: '/monitoring/disks', label: 'nav.disks', icon: 'device-hdd' },
-      { to: '/monitoring/interfaces', label: 'nav.interfaces', icon: 'ethernet' },
+      { to: '/monitoring/interfaces', label: 'nav.interfaces', icon: 'ethernet', hidden: true },
       { to: '/monitoring/services', label: 'nav.processes', icon: 'list-task' },
       { to: '/agents', label: 'nav.agents', icon: 'broadcast' },
       { label: 'nav.applications', icon: 'window-stack', phase: '5b', hidden: true },

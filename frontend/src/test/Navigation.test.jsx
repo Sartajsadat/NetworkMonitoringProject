@@ -22,7 +22,7 @@ describe('Sidebar', () => {
     renderWithAuth(<Sidebar />, { user: makeUser(['SUPER_ADMIN']) });
     expect(screen.getByRole('link', { name: /internet control/i })).toHaveAttribute('href', '/internet');
     for (const name of [/firewall integrations/i, /ip allow \/ block/i, /application access/i, /packet analyzer/i, /^captures/i,
-      /traffic/i, /ip addresses/i, /subnets/i, /network devices/i, /server groups/i]) {
+      /traffic/i, /ip addresses/i, /subnets/i, /network devices/i, /server groups/i, /^Network\ interfaces$/i]) {
       expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
     }
     expect(screen.queryByText('Applications')).not.toBeInTheDocument();
