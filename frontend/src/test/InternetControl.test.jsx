@@ -48,6 +48,16 @@ describe('internet control', () => {
     expect(await screen.findByText('Applying…')).toBeInTheDocument();
   });
 
+  it('opens the computer picked last time', async () => {
+    window.localStorage.setItem('netmon.internet.computer', 's2');
+    internetApi.computers.mockResolvedValue([{ id: 's1', name: 'lab-ubuntu' }, { id: 's2', name: 'my-pc' }]);
+    renderWithAuth(<InternetControlPage />, { user: makeUser(['SUPER_ADMIN']) });
+    expect(await screen.findByText('youtube.com')).toBeInTheDocument();
+    expect(internetApi.view).toHaveBeenCalledWith('s2');
+    expect(internetApi.view).not.toHaveBeenCalledWith('s1');
+    window.localStorage.removeItem('netmon.internet.computer');
+  });
+
   it('explains when approval by a second person is still needed', async () => {
     internetApi.view.mockResolvedValue({ ...VIEW, personalMode: false });
     renderWithAuth(<InternetControlPage />, { user: makeUser(['SUPER_ADMIN']) });

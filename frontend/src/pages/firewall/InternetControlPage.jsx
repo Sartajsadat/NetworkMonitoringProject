@@ -16,6 +16,15 @@ const APP_BADGE = {
   UNVERIFIED: 'text-bg-warning', REMOVAL_PENDING: 'text-bg-warning', FAILED: 'text-bg-danger',
 };
 const REFRESH_MS = 10000;
+const LAST_COMPUTER = 'netmon.internet.computer';
+
+function remembered() {
+  try { return window.localStorage.getItem(LAST_COMPUTER) || ''; } catch { return ''; }
+}
+
+function remember(id) {
+  try { window.localStorage.setItem(LAST_COMPUTER, id); } catch { /* not available: just not remembered */ }
+}
 
 function Switch({ id, checked, onChange, disabled, label }) {
   return (
@@ -121,12 +130,13 @@ function Apps({ view, onChange, busy }) {
 export default function InternetControlPage() {
   const { t } = useI18n();
   const computers = useApi(() => internetApi.computers(), []);
-  const [serverId, setServerId] = useState('');
+  const [serverId, setServerId] = useState(remembered);
   const [view, setView] = useState(null);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const list = computers.data || [];
-  const selected = serverId || list[0]?.id || '';
+  // The computer picked last time, if it still exists; otherwise the first one.
+  const selected = list.some((c) => c.id === serverId) ? serverId : list[0]?.id || '';
 
   const load = useCallback(async () => {
     if (!selected) return;
@@ -158,7 +168,7 @@ export default function InternetControlPage() {
       {list.length > 0 && (
         <div className="d-flex align-items-center gap-2 mb-3 flex-wrap">
           <label className="form-label mb-0 fw-semibold" htmlFor="ic-computer">{t('internet.computer')}</label>
-          <select id="ic-computer" className="form-select w-auto" value={selected} onChange={(e) => setServerId(e.target.value)}>
+          <select id="ic-computer" className="form-select w-auto" value={selected} onChange={(e) => { setServerId(e.target.value); remember(e.target.value); }}>
             {list.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
           {view && <span className={`badge ${view.connection === 'ONLINE' ? 'text-bg-success' : 'text-bg-secondary'}`}>
