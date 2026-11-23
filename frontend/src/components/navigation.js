@@ -12,7 +12,7 @@ export const NAV_SECTIONS = [
     title: 'nav.section.infrastructure',
     items: [
       { to: '/servers', label: 'nav.servers', icon: 'hdd-stack' },
-      { to: '/server-groups', label: 'nav.serverGroups', icon: 'collection' },
+      { to: '/server-groups', label: 'nav.serverGroups', icon: 'collection', hidden: true },
       { to: '/monitoring/cpu-memory', label: 'nav.cpuMemory', icon: 'cpu' },
       { to: '/monitoring/disks', label: 'nav.disks', icon: 'device-hdd' },
       { to: '/monitoring/interfaces', label: 'nav.interfaces', icon: 'ethernet' },
