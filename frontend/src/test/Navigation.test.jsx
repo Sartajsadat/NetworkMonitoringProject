@@ -18,26 +18,15 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /audit log/i })).toBeInTheDocument();
   });
 
-  it('marks unbuilt modules as disabled with their phase instead of linking to them', () => {
-    renderWithAuth(<Sidebar />, { user: makeUser(['NETWORK_ADMIN']) });
-    const item = screen.getByText('Logs').closest('[aria-disabled="true"]');
-    expect(item).toHaveTextContent('Phase 5b');
-    expect(screen.getByRole('link', { name: /application access/i })).toHaveAttribute('href', '/app-access');
-    // Built in Phase 7: real links now.
-    expect(screen.getByRole('link', { name: /firewall integrations/i })).toHaveAttribute('href', '/firewall');
-    expect(screen.getByRole('link', { name: /ip allow \/ block/i })).toHaveAttribute('href', '/ip-policies');
-  });
-
-  it('shows packet capture pages only to roles allowed to see captures', () => {
-    renderWithAuth(<Sidebar />, { user: makeUser(['SECURITY_ANALYST']) });
-    expect(screen.getByRole('link', { name: /packet analyzer/i })).toHaveAttribute('href', '/analyzer');
-    expect(screen.getByRole('link', { name: /^captures/i })).toHaveAttribute('href', '/captures');
-  });
-
-  it('hides packet capture pages from read-only and infrastructure users', () => {
-    renderWithAuth(<Sidebar />, { user: makeUser(['READ_ONLY', 'INFRASTRUCTURE_ADMIN']) });
-    expect(screen.queryByRole('link', { name: /packet analyzer/i })).not.toBeInTheDocument();
-    expect(screen.queryByText('Packet analyzer')).not.toBeInTheDocument();
+  it('leaves hidden items and sections with only hidden items out of the sidebar', () => {
+    renderWithAuth(<Sidebar />, { user: makeUser(['SUPER_ADMIN']) });
+    expect(screen.getByRole('link', { name: /internet control/i })).toHaveAttribute('href', '/internet');
+    for (const name of [/firewall integrations/i, /ip allow \/ block/i, /application access/i, /packet analyzer/i, /^captures/i,
+      /traffic/i, /ip addresses/i, /subnets/i, /network devices/i, /server groups/i, /^Network\ interfaces$/i, /^Event\ timeline$/i]) {
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
+    }
+    expect(screen.queryByText('Applications')).not.toBeInTheDocument();
+    expect(screen.queryByText('Logs')).not.toBeInTheDocument();
   });
 });
 

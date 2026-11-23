@@ -38,6 +38,7 @@ import RuleRequestPage from './pages/firewall/RuleRequestPage.jsx';
 import RuleDetailPage from './pages/firewall/RuleDetailPage.jsx';
 import AppAccessPage from './pages/firewall/AppAccessPage.jsx';
 import AppDetailPage from './pages/firewall/AppDetailPage.jsx';
+import InternetControlPage from './pages/firewall/InternetControlPage.jsx';
 import RetentionPage from './pages/admin/RetentionPage.jsx';
 import HealthPage from './pages/admin/HealthPage.jsx';
 
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="ip-policies" element={<FirewallRulesPage />} />
         <Route path="ip-policies/new" element={<ProtectedRoute roles={PERMISSIONS.requestFirewallRules}><RuleRequestPage /></ProtectedRoute>} />
         <Route path="ip-policies/:id" element={<RuleDetailPage />} />
+        <Route path="internet" element={<ProtectedRoute roles={PERMISSIONS.manageFirewall}><InternetControlPage /></ProtectedRoute>} />
         <Route path="app-access" element={<AppAccessPage />} />
         <Route path="app-access/:id" element={<AppDetailPage />} />
         <Route path="admin/retention" element={<ProtectedRoute roles={PERMISSIONS.viewOperations}><RetentionPage /></ProtectedRoute>} />

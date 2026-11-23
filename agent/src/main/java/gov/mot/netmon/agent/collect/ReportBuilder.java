@@ -28,9 +28,10 @@ public class ReportBuilder {
     public Report.Capture capture;
     public List<Report.Neighbor> neighbors;
     public Report.Firewall firewall;
+    public Report.Sites sites;
 
     public Report build(String agentVersion, Instant collectedAt, int intervalSeconds) {
         return new Report(agentVersion, collectedAt, intervalSeconds, host, cpu, memory, disks, diskIo, network, services,
-                processes, List.copyOf(collectors), capture, neighbors, firewall);
+                processes, List.copyOf(collectors), capture, neighbors, firewall, sites);
     }
 }

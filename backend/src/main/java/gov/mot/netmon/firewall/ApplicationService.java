@@ -76,7 +76,7 @@ public class ApplicationService {
         if (i == null) return new Support(false, "This server has no firewall target yet (add it under Firewall integrations)", null, null, false);
         TargetState t = firewalls.target(i);
         String why = FirewallRuleService.appSupport(i, t, a.getIdentityKind());
-        boolean enforcing = "ENFORCE".equals(i.getMode()) && t != null && t.enforcementAllowedOnServer();
+        boolean enforcing = firewalls.enforces(i, t);
         return new Support(why == null, why, i.getId(), i.getMode(), why == null && enforcing);
     }
 
@@ -179,7 +179,7 @@ public class ApplicationService {
                 "This server has no firewall target yet. Add it under Firewall integrations first."));
         TargetState t = firewalls.target(i);
         String unsupported = FirewallRuleService.appSupport(i, t, a.getIdentityKind());
-        boolean dry = !"ENFORCE".equals(i.getMode()) || t == null || !t.enforcementAllowedOnServer();
+        boolean dry = !firewalls.enforces(i, t);
         AppPolicyValidator.Check c = AppPolicyValidator.check(r.appMode(), a.getIdentityKind(), a.getIdentityValue(), r.destinations(),
                 r.expiresAt(), clock.instant(), dry);
         return new Prepared(a, i, t, c, unsupported, dry);
@@ -234,6 +234,9 @@ public class ApplicationService {
                 .reason(rule.getReason()).success();
         events.rule(rule, p.target(), "FIREWALL_RULE_REQUESTED", EventSeverity.INFO,
                 "Application access policy requested by " + user + ": " + FirewallEvents.describe(rule));
+        if (ruleService.approvesAtOnce(CurrentUser.require())) {
+            return ruleService.approve(rule, FirewallRuleService.PERSONAL_APPROVAL, true);
+        }
         return ruleService.view(rule, p.target());
     }
 

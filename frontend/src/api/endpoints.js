@@ -162,6 +162,17 @@ export const appApi = {
   request: (body) => api.post('/application-policies', body).then((r) => r.data),
 };
 
+// Internet control: website and application on/off switches
+export const internetApi = {
+  computers: () => api.get('/internet-control').then((r) => r.data),
+  view: (serverId) => api.get(`/internet-control/${serverId}`).then((r) => r.data),
+  addSite: (serverId, site) => api.post(`/internet-control/${serverId}/sites`, { site }).then((r) => r.data),
+  switchSite: (id, blocked) => api.put(`/internet-control/sites/${id}`, { blocked }).then((r) => r.data),
+  removeSite: (id) => api.delete(`/internet-control/sites/${id}`).then((r) => r.data),
+  addApp: (serverId, name, identity) => api.post(`/internet-control/${serverId}/apps`, { name, identity }).then((r) => r.data),
+  switchApp: (id, internet) => api.put(`/internet-control/apps/${id}`, { internet }).then((r) => r.data),
+};
+
 // Platform operations (Phase 9)
 export const opsApi = {
   retention: () => api.get('/retention-policies').then((r) => r.data),
