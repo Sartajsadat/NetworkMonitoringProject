@@ -1,3 +1,4 @@
+-- (V9 is the earlier website-blocking schema kept for databases that already applied it.)
 -- Internet control: websites blocked by name on one computer. The agent writes the names with
 -- blocked = TRUE into NetMon's own section of the computer's hosts file (when the computer's
 -- administrator enabled it with sites.enabled=true) and reports back what is really there.
