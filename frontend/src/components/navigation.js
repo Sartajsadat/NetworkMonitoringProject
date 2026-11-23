@@ -46,7 +46,7 @@ export const NAV_SECTIONS = [
     items: [
       { to: '/timeline', label: 'nav.timeline', icon: 'clock-history' },
       { to: '/alerts', label: 'nav.alerts', icon: 'bell' },
-      { label: 'nav.logs', icon: 'journal-text', phase: '5b' },
+      { label: 'nav.logs', icon: 'journal-text', phase: '5b', hidden: true },
       { to: '/audit-logs', label: 'nav.audit', icon: 'shield-check', roles: PERMISSIONS.viewAudit },
     ],
   },

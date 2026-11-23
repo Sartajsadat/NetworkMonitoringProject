@@ -18,12 +18,6 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: /audit log/i })).toBeInTheDocument();
   });
 
-  it('marks unbuilt modules as disabled with their phase instead of linking to them', () => {
-    renderWithAuth(<Sidebar />, { user: makeUser(['NETWORK_ADMIN']) });
-    const item = screen.getByText('Logs').closest('[aria-disabled="true"]');
-    expect(item).toHaveTextContent('Phase 5b');
-  });
-
   it('leaves hidden items and sections with only hidden items out of the sidebar', () => {
     renderWithAuth(<Sidebar />, { user: makeUser(['SUPER_ADMIN']) });
     expect(screen.getByRole('link', { name: /internet control/i })).toHaveAttribute('href', '/internet');
@@ -32,6 +26,7 @@ describe('Sidebar', () => {
       expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
     }
     expect(screen.queryByText('Applications')).not.toBeInTheDocument();
+    expect(screen.queryByText('Logs')).not.toBeInTheDocument();
   });
 });
 
